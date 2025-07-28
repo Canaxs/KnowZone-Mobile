@@ -13,6 +13,9 @@ module.exports = {
           logoBlack: '#222831',
           logoGray: '#f0f0f0',
           logoSilver: '#c7c9ca',
+        },
+        fontFamily: {
+          'sans': ['Roboto', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', 'sans-serif'],
         }
       },
     },

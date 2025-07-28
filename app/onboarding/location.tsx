@@ -43,7 +43,7 @@ export default function LocationPermissionScreen() {
       await new Promise(res => setTimeout(res, 1000));
       // Burada gerçek backend isteği yapılacak (fetch/axios ile)
       // await fetch('/api/onboarding', { method: 'POST', body: JSON.stringify(onboardingData) })
-      router.push('/');
+      router.push('/(tabs)');
     } catch (e) {
       setError('Veriler gönderilirken bir hata oluştu.');
     } finally {

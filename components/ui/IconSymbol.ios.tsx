@@ -1,32 +1,61 @@
-import { SymbolView, SymbolViewProps, SymbolWeight } from 'expo-symbols';
-import { StyleProp, ViewStyle } from 'react-native';
+// Fallback for using MaterialIcons on iOS, Android and web.
 
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { SymbolWeight } from 'expo-symbols';
+import { ComponentProps } from 'react';
+import { OpaqueColorValue, type StyleProp, type TextStyle } from 'react-native';
+
+type IconMapping = Record<string, ComponentProps<typeof MaterialIcons>['name']>;
+type IconSymbolName = keyof typeof MAPPING;
+
+/**
+ * Add your SF Symbols to Material Icons mappings here.
+ * - see Material Icons in the [Icons Directory](https://icons.expo.fyi).
+ * - see SF Symbols in the [SF Symbols](https://developer.apple.com/sf-symbols/) app.
+ */
+const MAPPING = {
+  'house.fill': 'home',
+  'paperplane.fill': 'send',
+  'chevron.left.forwardslash.chevron.right': 'code',
+  'chevron.right': 'chevron-right',
+  'person.fill': 'person',
+  'gearshape.fill': 'settings',
+  'lock.fill': 'lock',
+  'bell.fill': 'notifications',
+  'questionmark.circle.fill': 'help',
+  'info.circle.fill': 'info',
+  'rectangle.portrait.and.arrow.right.fill': 'logout',
+  'person.2.fill': 'people',
+  'book.fill': 'book',
+  'message.fill': 'chat',
+  'bubble.left.and.bubble.right.fill': 'chat',
+  'person.circle.fill': 'account-circle',
+  'magnifyingglass': 'search',
+  'plus': 'add',
+  'line.3.horizontal': 'menu',
+  'style': 'style',
+  'heart.fill': 'favorite',
+  'star.fill': 'star',
+  'slider.horizontal.3': 'tune',
+  'ellipsis': 'more-horiz',
+  'notifications-fill': 'notifications'
+} as IconMapping;
+
+/**
+ * An icon component that uses Material Icons on all platforms.
+ * This ensures a consistent look across platforms.
+ */
 export function IconSymbol({
   name,
   size = 24,
   color,
   style,
-  weight = 'regular',
 }: {
-  name: SymbolViewProps['name'];
+  name: IconSymbolName;
   size?: number;
-  color: string;
-  style?: StyleProp<ViewStyle>;
+  color: string | OpaqueColorValue;
+  style?: StyleProp<TextStyle>;
   weight?: SymbolWeight;
 }) {
-  return (
-    <SymbolView
-      weight={weight}
-      tintColor={color}
-      resizeMode="scaleAspectFit"
-      name={name}
-      style={[
-        {
-          width: size,
-          height: size,
-        },
-        style,
-      ]}
-    />
-  );
+  return <MaterialIcons color={color} size={size} name={MAPPING[name]}  style={style} />;
 }
