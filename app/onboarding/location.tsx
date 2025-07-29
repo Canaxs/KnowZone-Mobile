@@ -31,18 +31,16 @@ export default function LocationPermissionScreen() {
     setCompleteLoading(true);
     setError('');
     try {
-      // TODO: Onboarding verilerini context veya global state'ten al
-      // Şimdilik dummy veri ile simüle edelim
+
       const onboardingData = {
         interests: ['Teknoloji', 'Müzik', 'Spor'],
         hobbies: ['Yüzmek', 'Kitap Okumak', 'Yemek Yapmak'],
         idealPerson: ['Mizah anlayışı yüksek', 'Kitap okumayı seven', 'Açık fikirli'],
         location: 'user-location-coords',
       };
-      // Simüle: 1sn bekle
+
       await new Promise(res => setTimeout(res, 1000));
-      // Burada gerçek backend isteği yapılacak (fetch/axios ile)
-      // await fetch('/api/onboarding', { method: 'POST', body: JSON.stringify(onboardingData) })
+
       router.push('/(tabs)');
     } catch (e) {
       setError('Veriler gönderilirken bir hata oluştu.');

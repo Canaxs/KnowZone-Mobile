@@ -61,7 +61,7 @@ export default function HobbiesScreen() {
       <View className="flex-row flex-wrap mb-2">
         {hobbies.map((hobby, index) => {
           if (index === lastAddedIndex.current) {
-            // Animasyonlu kutucuk
+
             return (
               <Animated.View
                 key={index}
@@ -82,7 +82,6 @@ export default function HobbiesScreen() {
               </Animated.View>
             );
           } else {
-            // Normal kutucuk
             return (
               <TouchableOpacity
                 key={index}

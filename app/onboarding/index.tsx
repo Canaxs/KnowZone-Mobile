@@ -1,10 +1,23 @@
 import { router } from 'expo-router';
 import { useEffect } from 'react';
+import { useAuthStore } from '../../stores/authStore';
 
 export default function OnboardingIndex() {
-  // Bu ekran otomatik olarak ilgi alanları ekranına yönlendirir
+  const { clearAllData } = useAuthStore();
+  
   useEffect(() => {
+    handleClearData();
     router.replace('/onboarding/interests');
   }, []);
+
+  const handleClearData = async () => {
+    try {
+      await clearAllData();
+
+      router.replace('/');
+    } catch (error) {
+    }
+  };
+
   return null;
 } 

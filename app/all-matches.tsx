@@ -152,13 +152,11 @@ export default function AllMatchesScreen() {
   };
 
   const handleAccept = () => {
-    // Handle accept logic here
     setIsModalVisible(false);
     setSelectedMatch(null);
   };
 
   const handleReject = () => {
-    // Handle reject logic here
     setIsModalVisible(false);
     setSelectedMatch(null);
   };

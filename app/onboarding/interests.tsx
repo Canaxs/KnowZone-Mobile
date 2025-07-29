@@ -12,7 +12,7 @@ export default function InterestsScreen() {
   const addInterest = () => {
     if (inputText.trim() && interests.length < MAX_INTERESTS && !interests.includes(inputText.trim())) {
       setInterests([...interests, inputText.trim()]);
-      setLastAddedIndex(interests.length); // yeni eklenen index
+      setLastAddedIndex(interests.length); 
       setInputText('');
     }
   };
@@ -61,7 +61,6 @@ export default function InterestsScreen() {
       <View className="flex-row flex-wrap mb-2">
         {interests.map((interest, index) => {
           if (index === lastAddedIndex) {
-            // Animasyonlu kutucuk
             return (
               <Animated.View
                 key={index}
@@ -82,7 +81,6 @@ export default function InterestsScreen() {
               </Animated.View>
             );
           } else {
-            // Normal kutucuk
             return (
               <TouchableOpacity
                 key={index}

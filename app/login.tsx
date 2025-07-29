@@ -1,17 +1,22 @@
 import { Feather, FontAwesome, MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import React, { useEffect, useRef } from 'react';
-import { Animated, Dimensions, Easing, Image, KeyboardAvoidingView, Platform, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Animated, Dimensions, Easing, Image, Keyboard, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useAuthStore } from '../stores/authStore';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const TOP_HEIGHT = SCREEN_HEIGHT * 0.40;
 const CARD_HEIGHT = SCREEN_HEIGHT * 0.60;
+const KEYBOARD_ANIMATION_OFFSET = SCREEN_HEIGHT * 0.30;
 
 export default function LoginScreen() {
-  // Ping animasyonu için 3 halka
+
   const ping1 = useRef(new Animated.Value(0)).current;
   const ping2 = useRef(new Animated.Value(0)).current;
   const ping3 = useRef(new Animated.Value(0)).current;
+
+  const keyboardAnimation = useRef(new Animated.Value(0)).current;
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   useEffect(() => {
     function startPing(anim: any, delay: number) {
@@ -35,13 +40,82 @@ export default function LoginScreen() {
     startPing(ping3, 1200);
   }, []);
 
-  // Form state (dummy, backend entegrasyonu için güncellenecek)
-  const [email, setEmail] = React.useState('');
-  const [password, setPassword] = React.useState('');
-  const [remember, setRemember] = React.useState(false);
+  const handleKeyboardShow = (event: any) => {
+    const keyboardHeight = event.endCoordinates.height;
+    setKeyboardHeight(keyboardHeight);
+    
+    Animated.timing(keyboardAnimation, {
+      toValue: 1,
+      duration: 350, 
+      useNativeDriver: true,
+      easing: Easing.out(Easing.cubic),
+    }).start();
+  };
+
+  const handleKeyboardHide = () => {
+    setKeyboardHeight(0);
+
+    Animated.timing(keyboardAnimation, {
+      toValue: 0,
+      duration: 350, 
+      useNativeDriver: true,
+      easing: Easing.out(Easing.cubic), 
+    }).start();
+  };
+
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', handleKeyboardShow);
+    const keyboardWillHideListener = Keyboard.addListener('keyboardWillHide', handleKeyboardHide);
+
+    return () => {
+      keyboardDidShowListener?.remove();
+      keyboardWillHideListener?.remove();
+    };
+  }, []);
+
+
+  const [username, setUsername] = useState(''); 
+  const [password, setPassword] = useState('');
+  const [remember, setRemember] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const { login, isLoading: authLoading } = useAuthStore();
+
+  const handleLogin = async () => {
+    if (!username || !password) {
+      Alert.alert('Hata', 'Lütfen tüm alanları doldurun');
+      return;
+    }
+    setIsLoading(true);
+    try {
+      await login(username, password);
+
+    } catch (error: any) {
+      Alert.alert(
+        'Giriş Hatası', 
+        error.response?.data?.message || 'Giriş yapılırken bir hata oluştu'
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <View className="flex-1 bg-[#f5f5f5]">
+      <Animated.ScrollView
+        contentContainerStyle={{ minHeight: '100%' }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+        style={{
+          transform: [{
+            translateY: keyboardAnimation.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0, -KEYBOARD_ANIMATION_OFFSET], 
+            })
+          }]
+        }}
+        >
       {/* Üstte konum ve animasyonlu halkalar */}
       <View style={{ height: TOP_HEIGHT, width: '100%', position: 'relative', overflow: 'hidden', alignItems: 'center', justifyContent: 'center' }}>
         {/* Map görseli */}
@@ -75,10 +149,6 @@ export default function LoginScreen() {
         </TouchableOpacity>
       </View>
       {/* Alt beyaz kart */}
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1 }}
-      >
         <View
           className="bg-white rounded-t-3xl px-8 pt-8 pb-4 shadow-2xl z-10"
           style={{ height: CARD_HEIGHT, position: 'absolute', bottom: 0, left: 0, right: 0 }}
@@ -112,18 +182,19 @@ export default function LoginScreen() {
         </View>
           <Text className="text-2xl font-bold text-gray-900 mb-2 text-center mt-5">Giriş Yap</Text>
           <Text className="text-base text-gray-500 mb-6 text-center">KnowZone’a hoşgeldin! Ortak ilgi alanlarına sahip insanlarla tanışmak için giriş yap.</Text>
-          {/* Email */}
+          {/* Username */}
           <View className="flex-row items-center bg-gray-100 rounded-xl px-4 mb-4">
             <FontAwesome name="envelope-o" size={20} color="#9ca3af" />
             <TextInput
               className="flex-1 px-3 text-base text-gray-800"
-              placeholder="E-posta adresi"
+              placeholder="Kullanıcı Adı"
               placeholderTextColor="#9ca3af"
               keyboardType="email-address"
               autoCapitalize="none"
-              value={email}
-              onChangeText={setEmail}
-              style={{ textAlignVertical: 'center', height: 48 }}
+              value={username}
+              onChangeText={setUsername}
+              style={{ textAlignVertical: 'center', height: 48,lineHeight: 17}}
+              editable={!isLoading}
             />
           </View>
           {/* Şifre */}
@@ -136,7 +207,8 @@ export default function LoginScreen() {
               secureTextEntry
               value={password}
               onChangeText={setPassword}
-              style={{ textAlignVertical: 'center', height: 48 }}
+              style={{ textAlignVertical: 'center', height: 48 , lineHeight: 17}}
+              editable={!isLoading}
             />
           </View>
           {/* Beni Hatırla & Şifremi Unuttum */}
@@ -150,8 +222,18 @@ export default function LoginScreen() {
             </TouchableOpacity>
           </View>
           {/* Giriş Yap Butonu */}
-          <TouchableOpacity className="bg-logoBlack rounded-2xl py-4 mb-4 shadow-lg active:opacity-80" onPress={() => {}} activeOpacity={0.85}>
-            <Text className="text-white text-lg font-bold text-center">Giriş Yap</Text>
+          <TouchableOpacity className={`rounded-2xl py-4 mb-4 shadow-lg ${isLoading ? 'bg-gray-400' : 'bg-logoBlack'}`}
+          onPress={handleLogin}
+          disabled={isLoading}
+          activeOpacity={0.85}>
+            {isLoading ? (
+              <View className="flex-row items-center justify-center">
+                <ActivityIndicator color="white" size="small" />
+                <Text className="text-white text-lg font-bold ml-2">Giriş Yapılıyor...</Text>
+              </View>
+            ) : (
+              <Text className="text-white text-lg font-bold text-center">Giriş Yap</Text>
+            )}
           </TouchableOpacity>
           {/* Veya ile giriş */}
           <View className="flex-row items-center my-2">
@@ -177,7 +259,7 @@ export default function LoginScreen() {
             </TouchableOpacity>
           </View>
         </View>
-      </KeyboardAvoidingView>
+        </Animated.ScrollView>
     </View>
   );
 }

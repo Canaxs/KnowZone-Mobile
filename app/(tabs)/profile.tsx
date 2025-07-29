@@ -17,35 +17,35 @@ export default function ProfileScreen() {
       id: '1',
       title: 'Hesap Ayarları',
       icon: 'person.fill',
-      iconBgColor: '#3B82F6', // Mavi
+      iconBgColor: '#3B82F6', 
       onPress: () => console.log('Account Settings'),
     },
     {
       id: '2',
       title: 'Bildirimler',
       icon: 'bell.fill',
-      iconBgColor: '#F59E0B', // Turuncu
+      iconBgColor: '#F59E0B', 
       onPress: () => console.log('Notifications'),
     },
     {
       id: '3',
       title: 'Yardım & Destek',
       icon: 'questionmark.circle.fill',
-      iconBgColor: '#8B5CF6', // Mor
+      iconBgColor: '#8B5CF6', 
       onPress: () => console.log('Help & Support'),
     },
     {
       id: '4',
       title: 'Hakkında',
       icon: 'info.circle.fill',
-      iconBgColor: '#10B981', // Yeşil
+      iconBgColor: '#10B981',
       onPress: () => console.log('About'),
     },
     {
       id: '5',
       title: 'Çıkış Yap',
       icon: 'rectangle.portrait.and.arrow.right.fill',
-      iconBgColor: '#EF4444', // Kırmızı
+      iconBgColor: '#EF4444', 
       onPress: () => console.log('Logout'),
     },
   ];

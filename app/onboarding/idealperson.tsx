@@ -60,7 +60,7 @@ export default function IdealPersonScreen() {
       <View className="flex-row flex-wrap mb-2">
         {traits.map((trait, index) => {
           if (index === lastAddedIndex) {
-            // Animasyonlu kutucuk
+
             return (
               <Animated.View
                 key={index}
@@ -81,7 +81,6 @@ export default function IdealPersonScreen() {
               </Animated.View>
             );
           } else {
-            // Normal kutucuk
             return (
               <TouchableOpacity
                 key={index}

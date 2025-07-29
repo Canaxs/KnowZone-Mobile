@@ -123,19 +123,18 @@ export default function MatchesScreen() {
 
   const updateGroupsByLocation = () => {
     setIsLoading(true);
-    // Simulate API call
     setTimeout(() => {
-      // Randomly show/hide groups to simulate dynamic updates
-      const shouldShowGroups = Math.random() > 0.3; // 70% chance to show groups
+
+      const shouldShowGroups = Math.random() > 0.3; 
       
       if (shouldShowGroups) {
         setGroups(prevGroups => prevGroups.map(group => ({
           ...group,
-          isActive: Math.random() > 0.4, // Random active status
+          isActive: Math.random() > 0.4, 
           currentMembers: Math.floor(Math.random() * group.maxMembers) + 1,
         })));
       } else {
-        setGroups([]); // No groups available
+        setGroups([]); 
       }
       setIsLoading(false);
     }, 1000);
