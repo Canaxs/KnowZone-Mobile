@@ -1,14 +1,14 @@
 import * as SecureStore from 'expo-secure-store';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import { authAPI, LoginResponse } from '../lib/api';
+import { authAPI, LoginResponse, userAPI } from '../lib/api';
 
 // User interface
 interface User {
   id: number;
   username: string;
   email: string;
-  isOnboardingCompleted: boolean;
+  onboardingCompleted: boolean;
 }
 
 // Auth state interface
@@ -56,15 +56,13 @@ export const useAuthStore = create<AuthState>()(
         try {
           const response: LoginResponse = await authAPI.login(username, password);
           
-          // User bilgilerini hazırla
           const user: User = {
             id: response.userId,
             username: response.username,
             email: response.email,
-            isOnboardingCompleted: response.isOnboardingCompleted
+            onboardingCompleted: response.onboardingCompleted
           };
           
-          // Token'ı güvenli şekilde sakla
           await SecureStore.setItemAsync('auth_token', response.token);
           await SecureStore.setItemAsync('user_data', JSON.stringify(user));
           
@@ -83,7 +81,7 @@ export const useAuthStore = create<AuthState>()(
       register: async (username: string, email: string, password: string) => {
         set({ isLoading: true });
         try {
-          const response = await authAPI.register({ username, email, password });
+          const response = await userAPI.register({ username, email, password });
           
           // Kayıt sonrası otomatik login
           await get().login(username, password);

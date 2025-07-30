@@ -1,7 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { FlatList, Text, TouchableOpacity, View } from 'react-native';
+import { FlatList, Platform, Text, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInLeft, FadeInUp, SlideInRight, SlideOutRight } from 'react-native-reanimated';
 
 import { ThemedText } from '@/components/ThemedText';
@@ -248,7 +248,7 @@ export default function ChatScreen() {
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={{ 
-          paddingTop: 30,
+          paddingTop: Platform.OS === 'ios' ? 60 : 30,
           paddingBottom: 16,
           paddingHorizontal: 16,
           borderBottomWidth: 0,

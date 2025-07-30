@@ -16,18 +16,14 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (isInitialized && !isLoading) {
+    if (isInitialized && !isLoading) {    
       if (isAuthenticated && user) {
-        // Kullanıcı giriş yapmış, onboarding durumunu kontrol et
-        if (!user.isOnboardingCompleted) {
-          // Onboarding tamamlanmamış, onboarding'e yönlendir
+        if (!user.onboardingCompleted) {
           router.replace('/onboarding');
         } else {
-          // Onboarding tamamlanmış, ana sayfaya yönlendir
           router.replace('/(tabs)');
         }
       } else {
-        // Kullanıcı giriş yapmamış, welcome sayfasına yönlendir
         router.replace('/');
       }
     }

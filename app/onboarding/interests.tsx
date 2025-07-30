@@ -1,24 +1,27 @@
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useOnboardingStore } from '../../stores/onboardingStore';
 
 const MAX_INTERESTS = 5;
 
 export default function InterestsScreen() {
-  const [interests, setInterests] = useState<string[]>([]);
+  const { interests, setInterests } = useOnboardingStore();
   const [inputText, setInputText] = useState('');
   const [lastAddedIndex, setLastAddedIndex] = useState<number | null>(null);
 
   const addInterest = () => {
     if (inputText.trim() && interests.length < MAX_INTERESTS && !interests.includes(inputText.trim())) {
-      setInterests([...interests, inputText.trim()]);
+      const newInterests = [...interests, inputText.trim()];
+      setInterests(newInterests);
       setLastAddedIndex(interests.length); 
       setInputText('');
     }
   };
 
   const removeInterest = (interest: string) => {
-    setInterests(interests.filter(i => i !== interest));
+    const newInterests = interests.filter(i => i !== interest);
+    setInterests(newInterests);
   };
 
   const anim = useRef(new Animated.Value(0));

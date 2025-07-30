@@ -45,6 +45,17 @@ export interface LoginResponse {
   userId: number;
   username: string;
   email: string;
+  onboardingCompleted: boolean;
+}
+
+// User Response Type
+export interface UserResponse {
+  id: number;
+  username: string;
+  email: string;
+  hobbies: string[];
+  interests: string[];
+  idealPerson: string[];
   isOnboardingCompleted: boolean;
 }
 
@@ -54,7 +65,10 @@ export const authAPI = {
     const response = await api.post('/auth/login', { username, password });
     return response.data;
   },
-  
+};
+
+// User API endpoints
+export const userAPI = {
   register: async (userData: {
     username: string;
     email: string;
@@ -64,7 +78,16 @@ export const authAPI = {
     return response.data;
   },
   
-  updateOnboarding: async (onboardingData: any) => {
+  findById: async (userId: number): Promise<UserResponse> => {
+    const response = await api.get(`/user/findById/${userId}`);
+    return response.data;
+  },
+  
+  updateOnboarding: async (onboardingData: {
+    hobbies: string[];
+    interests: string[];
+    idealPersonTraits: string[];
+  }) => {
     const response = await api.patch('/user/onboarding', onboardingData);
     return response.data;
   },

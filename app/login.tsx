@@ -88,9 +88,12 @@ export default function LoginScreen() {
     }
     setIsLoading(true);
     try {
+      console.log('Login başlatılıyor...');
       await login(username, password);
+      console.log('Login başarılı!');
 
     } catch (error: any) {
+      console.log('Login hatası:', error);
       Alert.alert(
         'Giriş Hatası', 
         error.response?.data?.message || 'Giriş yapılırken bir hata oluştu'

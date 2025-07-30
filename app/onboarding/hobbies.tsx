@@ -1,24 +1,27 @@
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useOnboardingStore } from '../../stores/onboardingStore';
 
 const MAX_HOBBIES = 5;
 
 export default function HobbiesScreen() {
-  const [hobbies, setHobbies] = useState<string[]>([]);
+  const { hobbies, setHobbies } = useOnboardingStore();
   const [inputText, setInputText] = useState('');
   const lastAddedIndex = useRef<number | null>(null);
 
   const addHobby = () => {
     if (inputText.trim() && hobbies.length < MAX_HOBBIES && !hobbies.includes(inputText.trim())) {
-      setHobbies([...hobbies, inputText.trim()]);
+      const newHobbies = [...hobbies, inputText.trim()];
+      setHobbies(newHobbies);
       setInputText('');
       lastAddedIndex.current = hobbies.length;
     }
   };
 
   const removeHobby = (hobby: string) => {
-    setHobbies(hobbies.filter(i => i !== hobby));
+    const newHobbies = hobbies.filter(i => i !== hobby);
+    setHobbies(newHobbies);
   };
 
   const anim = useRef(new Animated.Value(0));

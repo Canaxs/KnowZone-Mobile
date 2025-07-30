@@ -1,5 +1,7 @@
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { router } from 'expo-router';
+import { Platform, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInLeft, FadeInUp } from 'react-native-reanimated';
+import { useAuthStore } from '../../stores/authStore';
 
 import { IconSymbol } from '@/components/ui/IconSymbol';
 
@@ -12,6 +14,17 @@ interface ProfileOption {
 }
 
 export default function ProfileScreen() {
+  const { user, logout } = useAuthStore();
+  
+  const handleLogout = async () => {
+    try {
+      await logout();
+      router.replace('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+  
   const profileOptions: ProfileOption[] = [
     {
       id: '1',
@@ -46,7 +59,7 @@ export default function ProfileScreen() {
       title: 'Çıkış Yap',
       icon: 'rectangle.portrait.and.arrow.right.fill',
       iconBgColor: '#EF4444', 
-      onPress: () => console.log('Logout'),
+      onPress: () => handleLogout(),
     },
   ];
 
@@ -76,7 +89,7 @@ export default function ProfileScreen() {
       className="flex-1 bg-white"
     >
       {/* Header */}
-      <View className="pt-12 pb-4 px-5">
+      <View className="pb-4 px-5" style={{ paddingTop: Platform.OS === 'ios' ? 60 : 48 }}>
         <View className="flex-row items-center justify-between">
           <TouchableOpacity className="w-8">
             <IconSymbol size={24} name="chevron.left" color="#374151" />
@@ -98,7 +111,12 @@ export default function ProfileScreen() {
                 <Text className="text-2xl">👨</Text>
               </View>
               <View className="flex-1">
-                <Text className="text-lg font-semibold text-gray-900 mb-1">Jenny Wilson</Text>
+                <Text className="text-lg font-semibold text-gray-900 mb-1">
+                  {user?.username || 'Kullanıcı'}
+                </Text>
+                <Text className="text-sm text-gray-500 mb-2">
+                  {user?.email || 'email@example.com'}
+                </Text>
                 <TouchableOpacity>
                   <Text className="text-blue-600 font-medium">Profili Düzenle</Text>
                 </TouchableOpacity>

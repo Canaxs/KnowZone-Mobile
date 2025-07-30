@@ -1,7 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Dimensions, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, Platform, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
 const { width } = Dimensions.get('window');
 
@@ -150,7 +150,7 @@ export default function MatchesScreen() {
       >
         {/* Modern Glassmorphism Header */}
         <View style={{ 
-          paddingTop: 50, 
+          paddingTop: Platform.OS === 'ios' ? 60 : 50, 
           paddingBottom: 20, 
           paddingHorizontal: 20,
           backgroundColor: 'rgba(255, 255, 255, 0.8)',

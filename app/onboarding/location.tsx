@@ -3,8 +3,13 @@ import * as Location from 'expo-location';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
+import { userAPI } from '../../lib/api';
+import { useAuthStore } from '../../stores/authStore';
+import { useOnboardingStore } from '../../stores/onboardingStore';
 
 export default function LocationPermissionScreen() {
+  const { hobbies, interests, idealPerson, resetOnboarding } = useOnboardingStore();
+  const { user, updateUserOnboardingStatus } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [permissionGranted, setPermissionGranted] = useState(false);
@@ -31,18 +36,27 @@ export default function LocationPermissionScreen() {
     setCompleteLoading(true);
     setError('');
     try {
-
       const onboardingData = {
-        interests: ['Teknoloji', 'Müzik', 'Spor'],
-        hobbies: ['Yüzmek', 'Kitap Okumak', 'Yemek Yapmak'],
-        idealPerson: ['Mizah anlayışı yüksek', 'Kitap okumayı seven', 'Açık fikirli'],
-        location: 'user-location-coords',
+        hobbies,
+        interests,
+        idealPersonTraits: idealPerson,
       };
 
-      await new Promise(res => setTimeout(res, 1000));
+      await userAPI.updateOnboarding(onboardingData);
 
+      // Kullanıcının onboarding durumunu güncelle
+      if (user) {
+        const updatedUser = {
+          ...user,
+          onboardingCompleted: true
+        };
+        updateUserOnboardingStatus(updatedUser);
+      }
+
+      // Store'u temizle ve ana sayfaya yönlendir
+      resetOnboarding();
       router.push('/(tabs)');
-    } catch (e) {
+    } catch (e: any) {
       setError('Veriler gönderilirken bir hata oluştu.');
     } finally {
       setCompleteLoading(false);

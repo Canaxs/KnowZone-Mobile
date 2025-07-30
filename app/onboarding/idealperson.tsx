@@ -1,23 +1,26 @@
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useOnboardingStore } from '../../stores/onboardingStore';
 
 const MAX_PERSONALITY = 5;
 
 export default function IdealPersonScreen() {
-  const [traits, setTraits] = useState<string[]>([]);
+  const { idealPerson, setIdealPerson } = useOnboardingStore();
   const [inputText, setInputText] = useState('');
-  const lastAddedIndex = traits.length - 1;
-
+  const lastAddedIndex = idealPerson.length - 1;
+  
   const addTrait = () => {
-    if (inputText.trim() && traits.length < MAX_PERSONALITY && !traits.includes(inputText.trim())) {
-      setTraits([...traits, inputText.trim()]);
+    if (inputText.trim() && idealPerson.length < MAX_PERSONALITY && !idealPerson.includes(inputText.trim())) {
+      const newIdealPerson = [...idealPerson, inputText.trim()];
+      setIdealPerson(newIdealPerson);
       setInputText('');
     }
   };
 
   const removeTrait = (trait: string) => {
-    setTraits(traits.filter(i => i !== trait));
+    const newIdealPerson = idealPerson.filter(i => i !== trait);
+    setIdealPerson(newIdealPerson);
   };
 
   const anim = useRef(new Animated.Value(0));
@@ -46,19 +49,19 @@ export default function IdealPersonScreen() {
           value={inputText}
           onChangeText={setInputText}
           onSubmitEditing={addTrait}
-          editable={traits.length < MAX_PERSONALITY}
+          editable={idealPerson.length < MAX_PERSONALITY}
         />
         <TouchableOpacity
-          className={`w-12 h-12 rounded-full justify-center items-center ${inputText.trim() && traits.length < MAX_PERSONALITY ? 'bg-logoBlack' : 'bg-gray-300'}`}
+          className={`w-12 h-12 rounded-full justify-center items-center ${inputText.trim() && idealPerson.length < MAX_PERSONALITY ? 'bg-logoBlack' : 'bg-gray-300'}`}
           onPress={addTrait}
-          disabled={!inputText.trim() || traits.length >= MAX_PERSONALITY}
+          disabled={!inputText.trim() || idealPerson.length >= MAX_PERSONALITY}
         >
           <Text className="text-white text-2xl font-bold">+</Text>
         </TouchableOpacity>
       </View>
       {/* Kutucuklar */}
       <View className="flex-row flex-wrap mb-2">
-        {traits.map((trait, index) => {
+        {idealPerson.map((trait, index) => {
           if (index === lastAddedIndex) {
 
             return (
@@ -96,23 +99,23 @@ export default function IdealPersonScreen() {
           }
         })}
         {/* Boş kutucuklar (max 5) */}
-        {Array.from({ length: MAX_PERSONALITY - traits.length }).map((_, i) => (
-          <View key={i + traits.length} className="px-4 py-2 m-1 rounded-full bg-gray-100 border border-gray-200" style={{ minWidth: 80 }} />
+        {Array.from({ length: MAX_PERSONALITY - idealPerson.length }).map((_, i) => (
+          <View key={i + idealPerson.length} className="px-4 py-2 m-1 rounded-full bg-gray-100 border border-gray-200" style={{ minWidth: 80 }} />
         ))}
       </View>
       {/* Uyarı ve sayaç */}
-      <Text className={`text-center text-sm mt-2 ${traits.length < 3 ? 'text-red-500' : 'text-gray-400'}`}>{
-        traits.length < 3
-          ? `Devam etmek için ${3 - traits.length} özellik daha seç.`
-          : `${traits.length}/5 Seçildi`
+      <Text className={`text-center text-sm mt-2 ${idealPerson.length < 3 ? 'text-red-500' : 'text-gray-400'}`}>{
+        idealPerson.length < 3
+          ? `Devam etmek için ${3 - idealPerson.length} özellik daha seç.`
+          : `${idealPerson.length}/5 Seçildi`
       }</Text>
       {/* Devam Et butonu */}
       <TouchableOpacity
         className={`p-4 rounded-full mt-5 ${
-          traits.length >= 3 ? 'bg-logoBlack' : 'bg-gray-300'
+          idealPerson.length >= 3 ? 'bg-logoBlack' : 'bg-gray-300'
         }`}
         onPress={() => router.push('/onboarding/location')}
-        disabled={traits.length < 3}
+        disabled={idealPerson.length < 3}
       >
         <Text className="text-white text-center font-bold text-base">
           Devam et
@@ -134,10 +137,10 @@ export default function IdealPersonScreen() {
         </View>
         <TouchableOpacity
           onPress={() => router.push('/onboarding/location')}
-          disabled={traits.length < 3}
+          disabled={idealPerson.length < 3}
           style={{ paddingHorizontal: 16, paddingVertical: 8 }}
         >
-          <Text style={{ fontSize: 36, color: traits.length >= 3 ? '#111827' : '#d1d5db', fontWeight: 'bold' }}>›</Text>
+          <Text style={{ fontSize: 36, color: idealPerson.length >= 3 ? '#111827' : '#d1d5db', fontWeight: 'bold' }}>›</Text>
         </TouchableOpacity>
       </View>
     </View>

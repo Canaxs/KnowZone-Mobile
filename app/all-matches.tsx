@@ -2,7 +2,7 @@ import { IconSymbol } from '@/components/ui/IconSymbol';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Dimensions, FlatList, Modal, Pressable, Text, TouchableOpacity, View } from 'react-native';
+import { Dimensions, FlatList, Modal, Platform, Pressable, Text, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 
 const { width } = Dimensions.get('window');
@@ -203,10 +203,11 @@ export default function AllMatchesScreen() {
   );
 
   return (
-    <View className="flex-1" style={{ backgroundColor: '#f8fafc' }}>
+    <View className="flex-1" 
+    style={{ backgroundColor: '#f8fafc',}}>
       {/* Modern Header */}
       <View style={{ 
-        paddingTop: 50, 
+        paddingTop: Platform.OS === 'ios' ? 60 : 48 ,
         paddingBottom: 20, 
         paddingHorizontal: 20,
         backgroundColor: 'rgba(255, 255, 255, 0.8)',
