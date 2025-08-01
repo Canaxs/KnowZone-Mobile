@@ -2,7 +2,7 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
 // API Base URL - Development için localhost
-const API_BASE_URL = 'http://192.168.1.104:8080';
+const API_BASE_URL = 'http://192.168.1.105:8080';
 
 // Axios instance oluştur
 export const api = axios.create({
@@ -67,6 +67,19 @@ export const authAPI = {
   },
 };
 
+// Match Response Type
+export interface MatchResponse {
+  id: number;
+  user1Id: number;
+  user2Id: number;
+  compatibilityScore: number;
+  commonTopic: string | null;
+  keywords: string[] | null;
+  status: string;
+  createdAt: string;
+  expiresAt: string;
+}
+
 // User API endpoints
 export const userAPI = {
   register: async (userData: {
@@ -89,6 +102,32 @@ export const userAPI = {
     idealPersonTraits: string[];
   }) => {
     const response = await api.patch('/user/onboarding', onboardingData);
+    return response.data;
+  },
+};
+
+// Location Update Type
+export interface LocationUpdateRequest {
+  latitude: number;
+  longitude: number;
+}
+
+// Matches API endpoints
+export const matchesAPI = {
+  getUserMatches: async (userId: number): Promise<MatchResponse[]> => {
+    const response = await api.get(`api/v1/matches/${userId}`);
+    return response.data;
+  },
+  
+  respondToMatch: async (matchId: number, accepted: boolean) => {
+    const response = await api.post(`/matches/${matchId}/respond`, {
+      accepted: accepted
+    });
+    return response.data;
+  },
+
+  updateLocation: async (locationData: LocationUpdateRequest) => {
+    const response = await api.post(`/api/v1/location/update`, locationData);
     return response.data;
   },
 };

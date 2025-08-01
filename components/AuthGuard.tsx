@@ -19,12 +19,12 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     if (isInitialized && !isLoading) {    
       if (isAuthenticated && user) {
         if (!user.onboardingCompleted) {
-          router.replace('/onboarding');
+          router.push('/onboarding');
         } else {
-          router.replace('/(tabs)');
+          router.push('/(tabs)');
         }
       } else {
-        router.replace('/');
+        router.push('/');
       }
     }
   }, [isInitialized, isAuthenticated, isLoading, user]);

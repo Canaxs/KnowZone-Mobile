@@ -2,6 +2,7 @@ import { Feather, FontAwesome, MaterialIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Animated, Dimensions, Easing, Image, Keyboard, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { fcmService } from '../lib/fcmService';
 import { useAuthStore } from '../stores/authStore';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -91,6 +92,12 @@ export default function LoginScreen() {
       console.log('Login başlatılıyor...');
       await login(username, password);
       console.log('Login başarılı!');
+
+      // Login sonrası FCM token'ı al ve server'a gönder
+      const token = await fcmService.registerForPushNotifications();
+      if (token) {
+        await fcmService.sendTokenToServer(useAuthStore.getState().user?.id || 0, token);
+      }
 
     } catch (error: any) {
       console.log('Login hatası:', error);

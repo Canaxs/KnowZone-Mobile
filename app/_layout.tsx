@@ -2,6 +2,7 @@ import * as Font from 'expo-font';
 import { Stack } from 'expo-router';
 import { useEffect } from 'react';
 import AuthGuard from '../components/AuthGuard';
+import { fcmService } from '../lib/fcmService';
 import { useAuthStore } from '../stores/authStore';
 import "../styles/global.css";
 
@@ -15,6 +16,11 @@ export default function RootLayout() {
       });
     }
     loadFonts();
+  }, []);
+
+  useEffect(() => {
+    // FCM notification handlers'ları kur
+    fcmService.setupNotificationHandlers();
   }, []);
 
   return (

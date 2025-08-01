@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "911971889549",
+    "project_id": "knowzone-ca13a",
+    "storage_bucket": "knowzone-ca13a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:911971889549:android:324b380d590b01e52b0dc4",
+        "android_client_info": {
+          "package_name": "com.knowzone.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAPH84EWwSCCd4aq0vuQMtjNzsmFlllcXM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

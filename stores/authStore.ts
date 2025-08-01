@@ -96,6 +96,9 @@ export const useAuthStore = create<AuthState>()(
         await SecureStore.deleteItemAsync('auth_token');
         await SecureStore.deleteItemAsync('user_data');
         
+        // Zustand persist storage'ı da temizle
+        await SecureStore.deleteItemAsync('auth-storage');
+        
         set({
           user: null,
           token: null,
@@ -135,6 +138,7 @@ export const useAuthStore = create<AuthState>()(
         SecureStore.setItemAsync('user_data', JSON.stringify(user));
       },
       clearAllData: async () => {
+        set({ isLoading: true });
         // Tüm verileri temizle
         await SecureStore.deleteItemAsync('auth_token');
         await SecureStore.deleteItemAsync('user_data');

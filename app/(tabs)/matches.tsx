@@ -1,7 +1,10 @@
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Location from 'expo-location';
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { Dimensions, Platform, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Alert, Dimensions, Modal, Platform, RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { LocationUpdateRequest, matchesAPI, MatchResponse } from '../../lib/api';
+import { useAuthStore } from '../../stores/authStore';
 
 const { width } = Dimensions.get('window');
 
@@ -9,6 +12,7 @@ interface MatchedUser {
   id: string;
   matchPercentage: number;
   gradientColors: string[];
+  matchData?: MatchResponse;
 }
 
 interface Group {
@@ -29,28 +33,119 @@ interface Group {
 }
 
 export default function MatchesScreen() {
-  const matchedUsers: MatchedUser[] = [
-    {
-      id: '1',
-      matchPercentage: 95,
-      gradientColors: ['#667eea', '#764ba2'],
-    },
-    {
-      id: '2',
-      matchPercentage: 87,
-      gradientColors: ['#f093fb', '#f5576c'],
-    },
-    {
-      id: '3',
-      matchPercentage: 92,
-      gradientColors: ['#4facfe', '#00f2fe'],
-    },
-    {
-      id: '4',
-      matchPercentage: 89,
-      gradientColors: ['#43e97b', '#38f9d7'],
-    },
+  const { user } = useAuthStore();
+  const [matchedUsers, setMatchedUsers] = useState<MatchedUser[]>([]);
+  const [isLoadingMatches, setIsLoadingMatches] = useState(false);
+  const [averageMatchPercentage, setAverageMatchPercentage] = useState(0);
+  
+  // Modal state'leri ekle
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [selectedMatch, setSelectedMatch] = useState<MatchedUser | null>(null);
+
+  // Gradient colors for match cards
+  const gradientColors = [
+    ['#667eea', '#764ba2'],
+    ['#f093fb', '#f5576c'],
+    ['#4facfe', '#00f2fe'],
+    ['#43e97b', '#38f9d7'],
+    ['#fa709a', '#fee140'],
+    ['#a8edea', '#fed6e3'],
+    ['#ff9a9e', '#fecfef'],
+    ['#ffecd2', '#fcb69f'],
   ];
+
+  // Fetch matches from API
+  const fetchMatches = async () => {
+    if (!user?.id) return;
+    
+    setIsLoadingMatches(true);
+    try {
+      // Önce konumu güncelle, sonra eşleşmeleri getir
+      await updateUserLocation();
+      
+      const matches = await matchesAPI.getUserMatches(user.id);
+      
+      const formattedMatches: MatchedUser[] = matches.slice(0, 4).map((match, index) => ({
+        id: match.id.toString(),
+        matchPercentage: Math.round(match.compatibilityScore),
+        gradientColors: gradientColors[index % gradientColors.length],
+        matchData: match,
+      }));
+      
+      // Ortalama eşleşme yüzdesini hesapla
+      if (formattedMatches.length > 0) {
+        const totalPercentage = formattedMatches.reduce((sum, match) => sum + match.matchPercentage, 0);
+        const average = Math.round(totalPercentage / formattedMatches.length);
+        setAverageMatchPercentage(average);
+      } else {
+        setAverageMatchPercentage(0);
+      }
+      
+      setMatchedUsers(formattedMatches);
+    } catch (error) {
+      console.error('Error fetching matches:', error);
+      Alert.alert('Hata', 'Eşleşmeler yüklenirken bir hata oluştu.');
+    } finally {
+      setIsLoadingMatches(false);
+    }
+  };
+
+  // Load matches on component mount
+  useEffect(() => {
+    fetchMatches();
+  }, [user?.id]);
+
+  const getCurrentLocation = async () => {
+    try {
+      // Konum izni kontrol et
+      const { status } = await Location.getForegroundPermissionsAsync();
+      
+      if (status !== 'granted') {
+        // İzin yoksa iste
+        const { status: newStatus } = await Location.requestForegroundPermissionsAsync();
+        if (newStatus !== 'granted') {
+          Alert.alert('Hata', 'Konum izni gerekli!');
+          return null;
+        }
+      }
+      
+      // Mevcut konumu al
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+        timeInterval: 5000,
+        distanceInterval: 10,
+      });
+      
+      return {
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude
+      };
+    } catch (error) {
+      console.error('Error getting location:', error);
+      Alert.alert('Hata', 'Konum alınırken bir hata oluştu.');
+      return null;
+    }
+  };
+
+  // Location update function
+  const updateUserLocation = async () => {
+    if (!user?.id) return;
+    
+    try {
+      const location = await getCurrentLocation();
+      if (!location) return;
+    
+      const locationData: LocationUpdateRequest = {
+        latitude: location.latitude,
+        longitude: location.longitude
+      };
+      await matchesAPI.updateLocation(locationData);
+      console.log('Location updated successfully');
+    } catch (error) {
+      console.error('Error updating location:', error);
+      Alert.alert('Hata', 'Konum güncellenirken bir hata oluştu.');
+    }
+  };
 
   const [groups, setGroups] = useState<Group[]>([
     {
@@ -140,13 +235,61 @@ export default function MatchesScreen() {
     }, 1000);
   };
 
+  // Handle functions ekle
+  const handleAccept = async () => {
+    if (!selectedMatch?.matchData) return;
+    
+    try {
+      await matchesAPI.respondToMatch(selectedMatch.matchData.id, true);
+      Alert.alert('Başarılı', 'Eşleşme kabul edildi!');
+      setIsModalVisible(false);
+      setSelectedMatch(null);
+      fetchMatches(); // Listeyi yenile
+    } catch (error) {
+      Alert.alert('Hata', 'Eşleşme yanıtlanırken bir hata oluştu.');
+    }
+  };
+
+  const handleReject = async () => {
+    if (!selectedMatch?.matchData) return;
+    
+    try {
+      await matchesAPI.respondToMatch(selectedMatch.matchData.id, false);
+      Alert.alert('Bilgi', 'Eşleşme reddedildi.');
+      setIsModalVisible(false);
+      setSelectedMatch(null);
+      fetchMatches(); // Listeyi yenile
+    } catch (error) {
+      Alert.alert('Hata', 'Eşleşme yanıtlanırken bir hata oluştu.');
+    }
+  };
+
+  // Match card'a tıklama fonksiyonu
+  const handleMatchPress = (match: MatchedUser) => {
+    setSelectedMatch(match);
+    setIsModalVisible(true);
+  };
+
   return (
     <View className="flex-1" style={{ backgroundColor: '#f8fafc' }}>
       {/* Content */}
       <ScrollView 
         showsVerticalScrollIndicator={false} 
         className="flex-1"
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={{ 
+          paddingBottom: 100,
+          flexGrow: 1
+        }}
+        refreshControl={
+          <RefreshControl
+            refreshing={isLoadingMatches}
+            onRefresh={fetchMatches}
+            tintColor="#667eea"
+            colors={['#667eea']}
+            progressViewOffset={Platform.OS === 'ios' ? 60 : 80}
+            progressBackgroundColor="transparent"
+          />
+        }
       >
         {/* Modern Glassmorphism Header */}
         <View style={{ 
@@ -195,7 +338,7 @@ export default function MatchesScreen() {
               shadowRadius: 8,
               elevation: 2,
             }}>
-              <Text className="text-2xl font-bold text-gray-800 text-center">12</Text>
+              <Text className="text-2xl font-bold text-gray-800 text-center">{matchedUsers.length}</Text>
               <Text className="text-gray-500 text-sm text-center">Yeni</Text>
             </View>
             <View style={{
@@ -211,7 +354,7 @@ export default function MatchesScreen() {
               shadowRadius: 8,
               elevation: 2,
             }}>
-              <Text className="text-2xl font-bold text-gray-800 text-center">89%</Text>
+              <Text className="text-2xl font-bold text-gray-800 text-center">{averageMatchPercentage}%</Text>
               <Text className="text-gray-500 text-sm text-center">Ortalama</Text>
             </View>
           </View>
@@ -245,51 +388,64 @@ export default function MatchesScreen() {
           </View>
           
           {/* Glassmorphism Match Cards */}
-          <View className="flex-row flex-wrap justify-between">
-            {matchedUsers.map((item, index) => (
-              <View
-                key={item.id}
-                style={{
-                  width: (width - 60) / 2,
-                  marginBottom: 16,
-                }}
-              >
-                <View style={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.8)',
-                  borderRadius: 20,
-                  padding: 20,
-                  height: 120,
-                  borderWidth: 1,
-                  borderColor: 'rgba(255, 255, 255, 0.9)',
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.08,
-                  shadowRadius: 12,
-                  elevation: 4,
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}>
-                  <LinearGradient
-                    colors={item.gradientColors as [string, string]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={{
-                      borderRadius: 16,
-                      padding: 12,
-                      marginBottom: 8,
-                    }}
-                  >
-                    <Text className="text-white text-2xl font-bold">
-                      {item.matchPercentage}%
+          {isLoadingMatches ? (
+            <View className="flex-1 justify-center items-center py-8">
+              <Text className="text-gray-500 text-sm">Eşleşmeler yükleniyor...</Text>
+            </View>
+          ) : matchedUsers.length === 0 ? (
+            <View className="flex-1 justify-center items-center py-8">
+              <Text className="text-gray-400 text-lg mb-2">🤷‍♂️</Text>
+              <Text className="text-gray-500 text-base text-center mb-1">Henüz eşleşmeniz yok</Text>
+              <Text className="text-gray-400 text-sm text-center">Yeni eşleşmeler için bekleyin</Text>
+            </View>
+          ) : (
+            <View className="flex-row flex-wrap justify-between">
+              {matchedUsers.map((item, index) => (
+                <TouchableOpacity
+                  key={item.id}
+                  onPress={() => handleMatchPress(item)}
+                  style={{
+                    width: (width - 60) / 2,
+                    marginBottom: 16,
+                  }}
+                >
+                  <View style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                    borderRadius: 20,
+                    padding: 20,
+                    height: 120,
+                    borderWidth: 1,
+                    borderColor: 'rgba(255, 255, 255, 0.9)',
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.08,
+                    shadowRadius: 12,
+                    elevation: 4,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}>
+                    <LinearGradient
+                      colors={item.gradientColors as [string, string]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={{
+                        borderRadius: 16,
+                        padding: 12,
+                        marginBottom: 8,
+                      }}
+                    >
+                      <Text className="text-white text-2xl font-bold">
+                        {item.matchPercentage}%
+                      </Text>
+                    </LinearGradient>
+                    <Text className="text-gray-600 text-sm font-medium">
+                      Eşleşme
                     </Text>
-                  </LinearGradient>
-                  <Text className="text-gray-600 text-sm font-medium">
-                    Eşleşme
-                  </Text>
-                </View>
-              </View>
-            ))}
-          </View>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
         </View>
 
         {/* Groups Section */}
@@ -434,6 +590,74 @@ export default function MatchesScreen() {
           )}
         </View>
       </ScrollView>
-    </View>
-  );
+
+        {/* Modal component'i ekle */}
+        <Modal
+          visible={isModalVisible}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setIsModalVisible(false)}
+        >
+          <View className="flex-1 bg-black bg-opacity-50 justify-center items-center px-4">
+            <View className="bg-white rounded-2xl p-6 w-full max-w-sm">
+              <Text className="text-xl font-bold text-center mb-4">
+                Eşleşme Detayları
+              </Text>
+              
+              {selectedMatch && (
+                <View className="mb-6">
+                  <Text className="text-gray-600 text-center mb-2">
+                    Uyumluluk Oranı: {selectedMatch.matchPercentage}%
+                  </Text>
+                  {selectedMatch.matchData?.commonTopic && (
+                    <Text className="text-gray-600 text-center mb-2">
+                      Ortak Konu: {selectedMatch.matchData.commonTopic}
+                    </Text>
+                  )}
+                </View>
+              )}
+              
+              <Text className="text-gray-600 text-center mb-6">
+                Bu eşleşmeyi kabul etmek istiyor musunuz?
+              </Text>
+              
+              <View className="flex-row space-x-3 w-full">
+                <TouchableOpacity 
+                  onPress={handleReject}
+                  style={{
+                    flex: 1,
+                    backgroundColor: '#ef4444',
+                    paddingVertical: 12,
+                    borderRadius: 8,
+                    alignItems: 'center'
+                  }}
+                >
+                  <Text className="text-white font-semibold">Reddet</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  onPress={handleAccept}
+                  style={{
+                    flex: 1,
+                    backgroundColor: '#10b981',
+                    paddingVertical: 12,
+                    borderRadius: 8,
+                    alignItems: 'center'
+                  }}
+                >
+                  <Text className="text-white font-semibold">Kabul Et</Text>
+                </TouchableOpacity>
+              </View>
+              
+              <TouchableOpacity 
+                onPress={() => setIsModalVisible(false)}
+                className="mt-4 py-2"
+              >
+                <Text className="text-gray-500 text-center">İptal</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      </View>
+    );
 } 

@@ -1,4 +1,3 @@
-import { router } from 'expo-router';
 import { Platform, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInLeft, FadeInUp } from 'react-native-reanimated';
 import { useAuthStore } from '../../stores/authStore';
@@ -14,12 +13,11 @@ interface ProfileOption {
 }
 
 export default function ProfileScreen() {
-  const { user, logout } = useAuthStore();
+  const { user, logout, clearAllData } = useAuthStore();
   
   const handleLogout = async () => {
     try {
-      await logout();
-      router.replace('/');
+      await clearAllData();
     } catch (error) {
       console.error('Logout error:', error);
     }

@@ -1,9 +1,11 @@
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { Dimensions, FlatList, Modal, Platform, Pressable, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Alert, Dimensions, Modal, Platform, Pressable, RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
+import { matchesAPI, MatchResponse } from '../lib/api';
+import { useAuthStore } from '../stores/authStore';
 
 const { width } = Dimensions.get('window');
 
@@ -16,191 +18,101 @@ interface MatchedUser {
   location: string;
   lastActive: string;
   interests: string[];
+  matchData?: MatchResponse;
 }
 
 export default function AllMatchesScreen() {
+  const { user } = useAuthStore();
   const [selectedFilter, setSelectedFilter] = useState('all');
   const [selectedMatch, setSelectedMatch] = useState<MatchedUser | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [matchedUsers, setMatchedUsers] = useState<MatchedUser[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const matchedUsers: MatchedUser[] = [
-    {
-      id: '1',
-      matchPercentage: 95,
-      gradientColors: ['#667eea', '#764ba2'],
-      name: 'Ayşe',
-      age: 24,
-      location: 'İzmir, Kordon',
-      lastActive: '2 dk önce',
-      interests: ['Kahve', 'Seyahat', 'Müzik'],
-    },
-    {
-      id: '2',
-      matchPercentage: 87,
-      gradientColors: ['#f093fb', '#f5576c'],
-      name: 'Zeynep',
-      age: 26,
-      location: 'İzmir, Alsancak',
-      lastActive: '5 dk önce',
-      interests: ['Teknoloji', 'Kitap', 'Yoga'],
-    },
-    {
-      id: '3',
-      matchPercentage: 92,
-      gradientColors: ['#4facfe', '#00f2fe'],
-      name: 'Elif',
-      age: 23,
-      location: 'İzmir, Bornova',
-      lastActive: '1 dk önce',
-      interests: ['Spor', 'Film', 'Fotoğraf'],
-    },
-    {
-      id: '4',
-      matchPercentage: 89,
-      gradientColors: ['#43e97b', '#38f9d7'],
-      name: 'Merve',
-      age: 25,
-      location: 'İzmir, Karşıyaka',
-      lastActive: '10 dk önce',
-      interests: ['Sanat', 'Dans', 'Kahve'],
-    },
-    {
-      id: '5',
-      matchPercentage: 91,
-      gradientColors: ['#FD79A8', '#FDCB6E'],
-      name: 'Deniz',
-      age: 27,
-      location: 'İzmir, Konak',
-      lastActive: '3 dk önce',
-      interests: ['Müzik', 'Seyahat', 'Yemek'],
-    },
-    {
-      id: '6',
-      matchPercentage: 73,
-      gradientColors: ['#00B894', '#00CEC9'],
-      name: 'Selin',
-      age: 22,
-      location: 'İzmir, Buca',
-      lastActive: '15 dk önce',
-      interests: ['Kitap', 'Yoga', 'Doğa'],
-    },
-    {
-      id: '7',
-      matchPercentage: 88,
-      gradientColors: ['#74B9FF', '#0984E3'],
-      name: 'Büşra',
-      age: 24,
-      location: 'İzmir, Çiğli',
-      lastActive: '7 dk önce',
-      interests: ['Teknoloji', 'Spor', 'Film'],
-    },
-    {
-      id: '8',
-      matchPercentage: 69,
-      gradientColors: ['#FAB1A0', '#E17055'],
-      name: 'Gizem',
-      age: 26,
-      location: 'İzmir, Bayraklı',
-      lastActive: '20 dk önce',
-      interests: ['Sanat', 'Müzik', 'Kahve'],
-    },
-    {
-      id: '9',
-      matchPercentage: 84,
-      gradientColors: ['#A29BFE', '#6C5CE7'],
-      name: 'Esra',
-      age: 23,
-      location: 'İzmir, Gaziemir',
-      lastActive: '4 dk önce',
-      interests: ['Dans', 'Film', 'Seyahat'],
-    },
-    {
-      id: '10',
-      matchPercentage: 76,
-      gradientColors: ['#FF7675', '#FD79A8'],
-      name: 'Melis',
-      age: 25,
-      location: 'İzmir, Narlıdere',
-      lastActive: '12 dk önce',
-      interests: ['Yoga', 'Kitap', 'Doğa'],
-    },
-    {
-      id: '11',
-      matchPercentage: 89,
-      gradientColors: ['#00B894', '#00CEC9'],
-      name: 'İrem',
-      age: 24,
-      location: 'İzmir, Urla',
-      lastActive: '1 dk önce',
-      interests: ['Yemek', 'Seyahat', 'Fotoğraf'],
-    },
-    {
-      id: '12',
-      matchPercentage: 71,
-      gradientColors: ['#74B9FF', '#0984E3'],
-      name: 'Sude',
-      age: 26,
-      location: 'İzmir, Foça',
-      lastActive: '8 dk önce',
-      interests: ['Spor', 'Müzik', 'Teknoloji'],
-    },
+  // Gradient colors for match cards
+  const gradientColors = [
+    ['#667eea', '#764ba2'],
+    ['#f093fb', '#f5576c'],
+    ['#4facfe', '#00f2fe'],
+    ['#43e97b', '#38f9d7'],
+    ['#fa709a', '#fee140'],
+    ['#a8edea', '#fed6e3'],
+    ['#ff9a9e', '#fecfef'],
+    ['#ffecd2', '#fcb69f'],
+    ['#FD79A8', '#FDCB6E'],
+    ['#00B894', '#00CEC9'],
+    ['#74B9FF', '#0984E3'],
+    ['#FAB1A0', '#E17055'],
+    ['#A29BFE', '#6C5CE7'],
+    ['#FF7675', '#FD79A8'],
   ];
+
+  // Fetch matches from API
+  const fetchMatches = async () => {
+    if (!user?.id) return;
+    
+    setIsLoading(true);
+    try {
+      const matches = await matchesAPI.getUserMatches(user.id);
+      
+      const formattedMatches: MatchedUser[] = matches.map((match, index) => ({
+        id: match.id.toString(),
+        matchPercentage: Math.round(match.compatibilityScore),
+        gradientColors: gradientColors[index % gradientColors.length],
+        name: `Kullanıcı ${match.id}`, // API'den gelen gerçek kullanıcı adı olacak
+        age: 24, // API'den gelecek
+        location: 'İzmir', // API'den gelecek
+        lastActive: '2 dk önce', // API'den gelecek
+        interests: match.keywords || ['Genel'], // API'den gelen keywords
+        matchData: match,
+      }));
+      
+      setMatchedUsers(formattedMatches);
+    } catch (error) {
+      console.error('Error fetching matches:', error);
+      Alert.alert('Hata', 'Eşleşmeler yüklenirken bir hata oluştu.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Load matches on component mount
+  useEffect(() => {
+    fetchMatches();
+  }, [user?.id]);
 
   const handleCardPress = (match: MatchedUser) => {
     setSelectedMatch(match);
     setIsModalVisible(true);
   };
 
-  const handleAccept = () => {
-    setIsModalVisible(false);
-    setSelectedMatch(null);
+  const handleAccept = async () => {
+    if (!selectedMatch?.matchData) return;
+    
+    try {
+      await matchesAPI.respondToMatch(selectedMatch.matchData.id, true);
+      Alert.alert('Başarılı', 'Eşleşme kabul edildi!');
+      setIsModalVisible(false);
+      setSelectedMatch(null);
+      fetchMatches(); // Listeyi yenile
+    } catch (error) {
+      Alert.alert('Hata', 'Eşleşme yanıtlanırken bir hata oluştu.');
+    }
   };
 
-  const handleReject = () => {
-    setIsModalVisible(false);
-    setSelectedMatch(null);
+  const handleReject = async () => {
+    if (!selectedMatch?.matchData) return;
+    
+    try {
+      await matchesAPI.respondToMatch(selectedMatch.matchData.id, false);
+      Alert.alert('Bilgi', 'Eşleşme reddedildi.');
+      setIsModalVisible(false);
+      setSelectedMatch(null);
+      fetchMatches(); // Listeyi yenile
+    } catch (error) {
+      Alert.alert('Hata', 'Eşleşme yanıtlanırken bir hata oluştu.');
+    }
   };
-
-  const renderMatchCard = ({ item, index }: { item: MatchedUser; index: number }) => (
-    <Animated.View
-      entering={FadeInUp.delay(index * 50).springify()}
-      style={{ width: (width - 48) / 2, marginBottom: 16 }}
-    >
-      <TouchableOpacity
-        onPress={() => handleCardPress(item)}
-        style={{
-          backgroundColor: 'rgba(255, 255, 255, 0.8)',
-          borderRadius: 20,
-          padding: 16,
-          height: 120,
-          borderWidth: 1,
-          margin:5,
-          borderColor: 'rgba(255, 255, 255, 0.9)',
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.08,
-          shadowRadius: 12,
-          elevation: 4,
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}
-      >
-        <LinearGradient
-          colors={item.gradientColors as [string, string]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={{
-            borderRadius: 16,
-            padding: 12,
-            marginBottom: 8,
-          }}
-        >
-          <Text className="text-white text-2xl font-bold">{item.matchPercentage}%</Text>
-        </LinearGradient>
-        <Text className="text-gray-600 text-sm font-medium">Eşleşme</Text>
-      </TouchableOpacity>
-    </Animated.View>
-  );
 
   return (
     <View className="flex-1" 
@@ -294,20 +206,87 @@ export default function AllMatchesScreen() {
       </View>
 
       {/* All Matches Grid */}
-      <FlatList
-        data={matchedUsers}
-        renderItem={renderMatchCard}
-        keyExtractor={(item) => item.id}
-        numColumns={2}
-        contentContainerStyle={{ 
-          paddingHorizontal: 16, 
-          paddingTop: 16, 
-          paddingBottom: 100,
-          paddingLeft: 16,
-          paddingRight: 16,
-        }}
+      <ScrollView
         showsVerticalScrollIndicator={false}
-      />
+        className="flex-1"
+        contentContainerStyle={{
+          paddingBottom: 100,
+          flexGrow: 1
+        }}
+        refreshControl={
+          <RefreshControl
+            refreshing={isLoading}
+            onRefresh={fetchMatches}
+            tintColor="#667eea"
+            colors={['#667eea']}
+            progressViewOffset={Platform.OS === 'ios' ? 60 : 80}
+            progressBackgroundColor="transparent"
+          />
+        }
+      >
+        {isLoading ? (
+          <View className="flex-1 justify-center items-center py-8">
+            <Text className="text-gray-500 text-sm">Eşleşmeler yükleniyor...</Text>
+          </View>
+        ) : matchedUsers.length === 0 ? (
+          <View className="flex-1 justify-center items-center py-8">
+            <Text className="text-gray-400 text-lg mb-2">🤷‍♂️</Text>
+            <Text className="text-gray-500 text-base text-center mb-1">Henüz eşleşmeniz yok</Text>
+            <Text className="text-gray-400 text-sm text-center">Yeni eşleşmeler için bekleyin</Text>
+          </View>
+        ) : (
+          <View style={{ 
+            flexDirection: 'row', 
+            flexWrap: 'wrap', 
+            paddingHorizontal: 16, 
+            paddingTop: 16,
+            paddingLeft: 16,
+            paddingRight: 16,
+          }}>
+            {matchedUsers.map((item, index) => (
+              <Animated.View
+                key={item.id}
+                entering={FadeInUp.delay(index * 50).springify()}
+                style={{ width: (width - 48) / 2, marginBottom: 16 }}
+              >
+                <TouchableOpacity
+                  onPress={() => handleCardPress(item)}
+                  style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                    borderRadius: 20,
+                    padding: 16,
+                    height: 120,
+                    borderWidth: 1,
+                    margin: 5,
+                    borderColor: 'rgba(255, 255, 255, 0.9)',
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.08,
+                    shadowRadius: 12,
+                    elevation: 4,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  }}
+                >
+                  <LinearGradient
+                    colors={item.gradientColors as [string, string]}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={{
+                      borderRadius: 16,
+                      padding: 12,
+                      marginBottom: 8,
+                    }}
+                  >
+                    <Text className="text-white text-2xl font-bold">{item.matchPercentage}%</Text>
+                  </LinearGradient>
+                  <Text className="text-gray-600 text-sm font-medium">Eşleşme</Text>
+                </TouchableOpacity>
+              </Animated.View>
+            ))}
+          </View>
+        )}
+      </ScrollView>
 
       {/* Match Detail Modal */}
       <Modal
