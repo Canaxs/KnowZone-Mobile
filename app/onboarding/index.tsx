@@ -6,7 +6,7 @@ export default function OnboardingIndex() {
   const { clearAllData } = useAuthStore();
   
   useEffect(() => {
-    router.replace('/onboarding/interests');
+    router.replace('/onboarding/gender');
   }, []);
 
   const handleClearData = async () => {

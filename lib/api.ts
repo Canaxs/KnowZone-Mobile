@@ -1,13 +1,11 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
+import { config } from './config';
 
-// API Base URL - Development için localhost
-const API_BASE_URL = 'http://192.168.1.105:8080';
 
-// Axios instance oluştur
 export const api = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 10000,
+  baseURL: config.API_BASE_URL,
+  timeout: config.TIMEOUT,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -46,6 +44,7 @@ export interface LoginResponse {
   username: string;
   email: string;
   onboardingCompleted: boolean;
+  gender: string;
 }
 
 // User Response Type
@@ -112,6 +111,14 @@ export interface LocationUpdateRequest {
   longitude: number;
 }
 
+// Chat Message Type
+export interface ChatMessageRequest {
+  senderId: number;
+  receiverId: number;
+  content: string;
+  type: 'CHAT' | 'JOIN' | 'LEAVE' | 'MATCH_NOTIFICATION';
+}
+
 // Matches API endpoints
 export const matchesAPI = {
   getUserMatches: async (userId: number): Promise<MatchResponse[]> => {
@@ -119,8 +126,18 @@ export const matchesAPI = {
     return response.data;
   },
   
+  getUserAcceptedMatches: async (userId: number): Promise<MatchResponse[]> => {
+    const response = await api.get(`api/v1/matches/${userId}/accepted`);
+    return response.data;
+  },
+
+  getMatchById: async (matchId: number): Promise<MatchResponse> => {
+    const response = await api.get(`api/v1/matches/detail/${matchId}`);
+    return response.data;
+  },
+  
   respondToMatch: async (matchId: number, accepted: boolean) => {
-    const response = await api.post(`/matches/${matchId}/respond`, {
+    const response = await api.post(`/api/v1/matches/${matchId}/respond`, {
       accepted: accepted
     });
     return response.data;
@@ -128,6 +145,19 @@ export const matchesAPI = {
 
   updateLocation: async (locationData: LocationUpdateRequest) => {
     const response = await api.post(`/api/v1/location/update`, locationData);
+    return response.data;
+  },
+};
+
+// Chat API endpoints
+export const chatAPI = {
+  getChatHistory: async (user1Id: number, user2Id: number) => {
+    const response = await api.get(`/api/chat/history/${user1Id}/${user2Id}`);
+    return response.data;
+  },
+
+  sendMessage: async (messageData: ChatMessageRequest) => {
+    const response = await api.post('/api/chat/send', messageData);
     return response.data;
   },
 };

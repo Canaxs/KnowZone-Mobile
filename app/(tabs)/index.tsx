@@ -1,11 +1,13 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { FlatList, Platform, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, FlatList, Platform, Text, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInLeft, FadeInUp, SlideInRight, SlideOutRight } from 'react-native-reanimated';
 
 import { ThemedText } from '@/components/ThemedText';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import { matchesAPI, MatchResponse } from '../../lib/api';
+import { useAuthStore } from '../../stores/authStore';
 
 interface ChatUser {
   id: string;
@@ -15,48 +17,57 @@ interface ChatUser {
   unreadCount?: number;
   isOnline?: boolean;
   lastSeen?: string;
+  matchData?: MatchResponse;
 }
 
 export default function ChatScreen() {
+  const { user } = useAuthStore();
   const [isFriendsOpen, setIsFriendsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('messages');
+  const [acceptedMatches, setAcceptedMatches] = useState<ChatUser[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const params = useLocalSearchParams();
 
-  const chatUsers: ChatUser[] = [
-    {
-      id: '1',
-      name: 'Caroline',
-      lastMessage: 'Momon: Siapa yang ngeshot besick?',
-      timestamp: '09:11',
-      unreadCount: 2,
-      isOnline: true,
-    },
-    {
-      id: '2',
-      name: 'Juliu',
-      lastMessage: 'Meeting tomorrow at 10 AM',
-      timestamp: '10:20',
-      unreadCount: 1,
-      isOnline: false,
-      lastSeen: '2 saat önce',
-    },
-    {
-      id: '3',
-      name: 'Rosalie',
-      lastMessage: 'Code review completed',
-      timestamp: '11:30',
-      isOnline: true,
-    },
-    {
-      id: '4',
-      name: 'Gregory',
-      lastMessage: 'Campaign launch next week',
-      timestamp: '12:45',
-      unreadCount: 3,
-      isOnline: false,
-      lastSeen: '5 dakika önce',
-    },
-  ];
+  // Eşleşmiş kullanıcıları getir
+  const fetchAcceptedMatches = async () => {
+    if (!user?.id) return;
+    
+    setIsLoading(true);
+    try {
+      const matches = await matchesAPI.getUserAcceptedMatches(user.id);
+      
+      const chatUsers: ChatUser[] = matches.map((match) => {
+        // Diğer kullanıcının ID'sini bul
+        const otherUserId = match.user1Id === user.id ? match.user2Id : match.user1Id;
+        
+        return {
+          id: match.id.toString(),
+          name: `%${Math.round(match.compatibilityScore)} Eşleşme`,
+          lastMessage: 'Uzayda Yaşam Var Mı ?',
+          timestamp: new Date(match.createdAt).toLocaleTimeString('tr-TR', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          }),
+          isOnline: true,
+          matchData: match,
+        };
+      });
+      
+      setAcceptedMatches(chatUsers);
+    } catch (error) {
+      console.error('Error fetching accepted matches:', error);
+      Alert.alert('Hata', 'Eşleşmeler yüklenirken bir hata oluştu.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Chat'e git
+  const handleChatPress = (chatUser: ChatUser) => {
+    if (chatUser.matchData) {
+      router.push(`/chat/${chatUser.matchData.id}` as any);
+    }
+  };
 
   const openFriends = () => {
     setIsFriendsOpen(true);
@@ -65,6 +76,10 @@ export default function ChatScreen() {
   const closeFriends = () => {
     setIsFriendsOpen(false);
   };
+
+  useEffect(() => {
+    fetchAcceptedMatches();
+  }, [user?.id]);
 
   useEffect(() => {
     if (params.openFriends === 'true') {
@@ -95,6 +110,7 @@ export default function ChatScreen() {
       >
         <TouchableOpacity 
           className="flex-row items-center py-4 px-4"
+          onPress={() => handleChatPress(item)}
         >
           <View className="mr-4 relative">
             <View 
@@ -206,7 +222,7 @@ export default function ChatScreen() {
       className="flex-1 justify-center items-center px-8"
     >
       <View className="w-24 h-24 rounded-full bg-gray-100 justify-center items-center mb-6">
-        <IconSymbol size={48} name="bubble.left.and.bubble.right" color="#D1D5DB" />
+      <Text style={{ fontSize: 22 }}>👤</Text>
       </View>
       
       <Text className="text-xl font-semibold text-gray-700 text-center mb-2">
@@ -217,7 +233,7 @@ export default function ChatScreen() {
         Yeni arkadaşlar ekleyerek sohbet etmeye başlayın veya mevcut arkadaşlarınızla iletişime geçin
       </Text>
       
-      <TouchableOpacity className="bg-blue-500 px-8 py-4 rounded-full">
+      <TouchableOpacity className="bg-black px-8 py-4 rounded-full">
         <Text className="text-white font-semibold text-center">
           İlk Mesajınızı Gönderin
         </Text>
@@ -226,15 +242,7 @@ export default function ChatScreen() {
   );
 
   const getAvatarEmoji = (name: string) => {
-    const emojiMap: { [key: string]: string } = {
-      'Caroline': '👩',
-      'Gregory': '👴',
-      'Rosalie': '👩',
-      'Juliu': '👨',
-    };
-    
-    const firstName = name.split(' ')[0];
-    return emojiMap[firstName] || '👤';
+    return user?.gender === 'MALE' ? '👩' : '👨'
   };
 
   return (
@@ -259,7 +267,7 @@ export default function ChatScreen() {
         <View className="flex-row justify-between items-center">
           {/* Left - Avatar */}
           <View className="w-10 h-10 rounded-full bg-gray-100 justify-center items-center">
-            <Text className="text-white text-lg">👴</Text>
+            <Text className="text-white text-lg">{user?.gender === 'MALE' ? '👨' : '👩'}</Text>
           </View>
           
           {/* Center - Tab Navigation */}
@@ -302,9 +310,9 @@ export default function ChatScreen() {
         end={{ x: 1, y: 0 }}
         style={{ flex: 1 }}
       >
-        {chatUsers.length > 0 ? (
+        {acceptedMatches.length > 0 ? (
           <FlatList
-            data={chatUsers}
+            data={acceptedMatches}
             renderItem={renderChatItem}
             keyExtractor={(item) => item.id}
             contentContainerStyle={{ paddingTop: 10, paddingBottom: 20 }}
@@ -351,7 +359,7 @@ export default function ChatScreen() {
           
           <View className="flex-1 bg-white">
             <FlatList
-              data={chatUsers}
+              data={acceptedMatches} // Use acceptedMatches for friends
               renderItem={renderFriendItem}
               keyExtractor={(item) => item.id}
               contentContainerStyle={{ paddingTop: 10, paddingBottom: 20 }}

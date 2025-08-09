@@ -9,6 +9,7 @@ interface User {
   username: string;
   email: string;
   onboardingCompleted: boolean;
+  gender: string;
 }
 
 // Auth state interface
@@ -60,7 +61,8 @@ export const useAuthStore = create<AuthState>()(
             id: response.userId,
             username: response.username,
             email: response.email,
-            onboardingCompleted: response.onboardingCompleted
+            onboardingCompleted: response.onboardingCompleted,
+            gender: response.gender
           };
           
           await SecureStore.setItemAsync('auth_token', response.token);

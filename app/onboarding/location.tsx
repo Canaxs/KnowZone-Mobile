@@ -8,7 +8,7 @@ import { useAuthStore } from '../../stores/authStore';
 import { useOnboardingStore } from '../../stores/onboardingStore';
 
 export default function LocationPermissionScreen() {
-  const { hobbies, interests, idealPerson, resetOnboarding } = useOnboardingStore();
+  const { hobbies, interests, idealPerson, gender, resetOnboarding } = useOnboardingStore();
   const { user, updateUserOnboardingStatus } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -40,6 +40,7 @@ export default function LocationPermissionScreen() {
         hobbies,
         interests,
         idealPersonTraits: idealPerson,
+        gender
       };
 
       await userAPI.updateOnboarding(onboardingData);
@@ -108,10 +109,10 @@ export default function LocationPermissionScreen() {
         </TouchableOpacity>
         {/* Stepper dots */}
         <View style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 8 }}>
-          {[0,1,2,3].map((i) => (
+          {[0,1,2,3,4].map((i) => (
             <View
               key={i}
-              style={{ width: 8, height: 8, borderRadius: 4, marginHorizontal: 4, backgroundColor: i === 3 ? '#111827' : '#d1d5db' }}
+              style={{ width: 8, height: 8, borderRadius: 4, marginHorizontal: 4, backgroundColor: i === 4 ? '#111827' : '#d1d5db' }}
             />
           ))}
         </View>

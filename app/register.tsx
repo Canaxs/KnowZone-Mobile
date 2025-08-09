@@ -68,8 +68,6 @@ export default function RegisterScreen() {
   };
 
   const handleKeyboardHide = () => {
-    setKeyboardHeight(0);
-
     Animated.timing(keyboardAnimation, {
       toValue: 0,
       duration: 350, 
@@ -115,7 +113,7 @@ export default function RegisterScreen() {
         <View style={{ position: 'absolute', backgroundColor: '#000', opacity: 0.35, width: '100%', height: '100%' }} />
       </View>
       {/* Sol üstte şık geri tuşu */}
-      <View style={{ position: 'absolute', top: 15, left: 10, zIndex: 200 }}>
+      <View style={{ position: 'absolute', top: 50, left: 10, zIndex: 200 }}>
         <TouchableOpacity
           onPress={() => router.back()}
           style={{

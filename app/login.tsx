@@ -137,7 +137,7 @@ export default function LoginScreen() {
         <View style={{ position: 'absolute', width: '100%', height: '100%', backgroundColor: '#000', opacity: 0.35}} />
       </View>
       {/* Sol üstte şık geri tuşu */}
-      <View style={{ position: 'absolute', top: 15, left: 10, zIndex: 200 }}>
+      <View style={{ position: 'absolute', top: 50, left: 10, zIndex: 200 }}>
         <TouchableOpacity
           onPress={() => router.back()}
           style={{

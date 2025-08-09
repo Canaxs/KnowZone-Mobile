@@ -36,7 +36,7 @@ export default function IdealPersonScreen() {
   }, [lastAddedIndex]);
 
   return (
-    <View className="flex-1 bg-white px-6 pt-12">
+    <View className="flex-1 bg-white px-6 pt-36">
       {/* Başlık ve açıklama */}
       <Text className="text-lg font-semibold text-gray-900 mb-1">Birlikte vakit geçirmekten keyif alacağın biri nasıl olmalı?</Text>
       <Text className="text-base text-gray-500 mb-6">(Örn: Mizah anlayışı yüksek, kitap okumayı seven, açık fikirli)</Text>
@@ -128,10 +128,10 @@ export default function IdealPersonScreen() {
         </TouchableOpacity>
         {/* Stepper dots */}
         <View style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 8 }}>
-          {[0,1,2,3].map((i) => (
+          {[0,1,2,3,4].map((i) => (
             <View
               key={i}
-              style={{ width: 8, height: 8, borderRadius: 4, marginHorizontal: 4, backgroundColor: i === 2 ? '#111827' : '#d1d5db' }}
+              style={{ width: 8, height: 8, borderRadius: 4, marginHorizontal: 4, backgroundColor: i === 3 ? '#111827' : '#d1d5db' }}
             />
           ))}
         </View>
