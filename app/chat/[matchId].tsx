@@ -36,10 +36,12 @@ export default function ChatScreen() {
   // Keyboard animation - Dinamik yükseklik
   const keyboardAnimation = useRef(new Animated.Value(0)).current;
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [listKeyboardHeight, setListKeyboardHeight] = useState(0);
 
   const handleKeyboardShow = (event: any) => {
     const keyboardHeight = event.endCoordinates.height;
     setKeyboardHeight(keyboardHeight);
+    setListKeyboardHeight(keyboardHeight);
     
     Animated.timing(keyboardAnimation, {
       toValue: 1,
@@ -49,14 +51,16 @@ export default function ChatScreen() {
     }).start();
   };
 
-  const handleKeyboardHide = () => {
-
+  const handleKeyboardHide = (event: any) => {
+    setListKeyboardHeight(0);
     Animated.timing(keyboardAnimation, {
       toValue: 0,
       duration: 400,
       useNativeDriver: true,
       easing: Easing.out(Easing.cubic), 
-    }).start();
+    }).start(() => {
+      setKeyboardHeight(0);
+    });
   };
 
   useEffect(() => {
@@ -214,7 +218,7 @@ export default function ChatScreen() {
           </Text>
           <View>
             <Text className='text-sm text-gray-500'>
-              Uzayda Yaşam var mı ?
+              {match?.commonTopic || 'Uzayda Yaşam Var Mı ?' }
             </Text>
           </View>
           {/* 
@@ -245,7 +249,7 @@ export default function ChatScreen() {
       </View>
 
       {/* Messages ve Input - Birlikte animasyonlu (WhatsApp gibi) */}
-             <Animated.View 
+      <Animated.View 
          className="flex-1"
          style={{
            transform: [{
@@ -254,7 +258,8 @@ export default function ChatScreen() {
                outputRange: [0, -keyboardHeight], // Dinamik klavye yüksekliği kullan
              })
            }],
-           zIndex: 1 // Mesaj listesini header'ın arkasında tut
+           zIndex: 1 ,
+           paddingBottom: 15
          }}
        >
         {/* Messages */}
@@ -270,7 +275,15 @@ export default function ChatScreen() {
             renderItem={renderMessage}
             keyExtractor={(item) => item.messageId}
             className="flex-1"
-            contentContainerStyle={{ paddingVertical: 16 }}
+            contentContainerStyle={{ 
+              paddingVertical: 16
+            }}
+            contentInset={{
+              top: listKeyboardHeight,
+              bottom: 0,
+              left: 0,
+              right: 0
+            }}
             inverted={false}
             onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
             showsVerticalScrollIndicator={false}
@@ -278,7 +291,7 @@ export default function ChatScreen() {
         )}
 
         {/* Input - Mesaj listesi ile birlikte hareket eder */}
-        <View className="flex-row items-center px-4 py-3 border-t border-gray-200 mb-8">
+        <View className="flex-row items-center px-4 py-3 border-t border-gray-200">
           <TextInput
             className="flex-1 bg-gray-100 rounded-full px-4 py-2 mr-3"
             placeholder="Mesajınızı yazın..."

@@ -43,7 +43,7 @@ export default function ChatScreen() {
         return {
           id: match.id.toString(),
           name: `%${Math.round(match.compatibilityScore)} Eşleşme`,
-          lastMessage: 'Uzayda Yaşam Var Mı ?',
+          lastMessage: match.commonTopic || 'Uzayda Yaşam Var Mı ?',
           timestamp: new Date(match.createdAt).toLocaleTimeString('tr-TR', { 
             hour: '2-digit', 
             minute: '2-digit' 

@@ -60,7 +60,7 @@ export default function MatchesScreen() {
     setIsLoadingMatches(true);
     try {
       // Önce konumu güncelle, sonra eşleşmeleri getir
-      await updateUserLocation();
+      //await updateUserLocation();
       
       const matches = await matchesAPI.getUserMatches(user.id);
       
@@ -363,27 +363,58 @@ export default function MatchesScreen() {
         <View className="px-4 py-6">
           <View className="flex-row justify-between items-center mb-6">
             <Text className="text-xl font-bold text-gray-800">Son Eşleşmeler</Text>
-            <TouchableOpacity 
-              onPress={() => router.push('/all-matches')}
-              style={{
-                backgroundColor: '#000000',
-                paddingHorizontal: 14,
-                paddingVertical: 8,
-                borderRadius: 20,
-                borderWidth: 1,
-                borderColor: 'rgba(0, 0, 0, 0.1)',
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.3,
-                shadowRadius: 8,
-                elevation: 6,
-              }}
-            >
-              <View className="flex-row items-center">
-                <Text className="text-white font-semibold mr-1 text-sm">Tümünü Gör</Text>
-                <Text className="text-white text-sm">→</Text>
-              </View>
-            </TouchableOpacity>
+            
+            {/* Action Buttons Container */}
+            <View className="flex-row space-x-2">
+              {/* Refresh Matches Button */}
+              <TouchableOpacity 
+                onPress={() => {
+                  updateUserLocation();
+                  fetchMatches();
+                }}
+                style={{
+                  backgroundColor: '#000',
+                  paddingHorizontal: 12,
+                  paddingVertical: 8,
+                  marginRight: 5,
+                  borderRadius: 20,
+                  borderWidth: 1,
+                  borderColor: 'rgba(0, 0, 0, 0.1)',
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 8,
+                  elevation: 6,
+                }}
+              >
+                <View className="flex-row items-center">
+                  <Text className="text-white font-semibold mr-1 text-sm">🔄 Yenile</Text>
+                </View>
+              </TouchableOpacity>
+              
+              {/* View All Matches Button */}
+              <TouchableOpacity 
+                onPress={() => router.push('/all-matches')}
+                style={{
+                  backgroundColor: '#000000',
+                  paddingHorizontal: 14,
+                  paddingVertical: 8,
+                  borderRadius: 20,
+                  borderWidth: 1,
+                  borderColor: 'rgba(0, 0, 0, 0.1)',
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 8,
+                  elevation: 6,
+                }}
+              >
+                <View className="flex-row items-center">
+                  <Text className="text-white font-semibold mr-1 text-sm">Daha Fazla</Text>
+                  <Text className="text-white text-sm">→</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
           </View>
           
           {/* Glassmorphism Match Cards */}

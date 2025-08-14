@@ -4,10 +4,13 @@ import { useEffect } from 'react';
 import AuthGuard from '../components/AuthGuard';
 import { fcmService } from '../lib/fcmService';
 import { useAuthStore } from '../stores/authStore';
+import { Toast } from '../components/Toast';
+import { useToastStore } from '../stores/toastStore';
 import "../styles/global.css";
 
 export default function RootLayout() {
   const { checkAuthStatus } = useAuthStore();
+  const { isVisible, message, type, hideToast } = useToastStore();
 
   useEffect(() => {
     async function loadFonts() {
@@ -35,6 +38,15 @@ export default function RootLayout() {
         <Stack.Screen name="chat/[matchId]" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
       </Stack>
+      
+      {/* Global Toast */}
+      {isVisible && (
+        <Toast
+          message={message}
+          type={type}
+          onHide={hideToast}
+        />
+      )}
     </AuthGuard>
   );
 }

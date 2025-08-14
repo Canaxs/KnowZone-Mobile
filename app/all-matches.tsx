@@ -1,6 +1,6 @@
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Alert, Dimensions, Modal, Platform, RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { matchesAPI, MatchResponse } from '../lib/api';
@@ -18,14 +18,17 @@ interface MatchedUser {
   lastActive: string;
   interests: string[];
   matchData?: MatchResponse;
+  createdAt: Date;
+  timeAgo: string;
+  status: 'pending' | 'waiting';
 }
 
 export default function AllMatchesScreen() {
   const { user } = useAuthStore();
-  const [selectedFilter, setSelectedFilter] = useState('all');
+  const [selectedFilter, setSelectedFilter] = useState('pending');
   const [selectedMatch, setSelectedMatch] = useState<MatchedUser | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [matchedUsers, setMatchedUsers] = useState<MatchedUser[]>([]);
+  const [allMatches, setAllMatches] = useState<MatchedUser[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   // Gradient colors for match cards
@@ -46,27 +49,73 @@ export default function AllMatchesScreen() {
     ['#FF7675', '#FD79A8'],
   ];
 
+  // Calculate time ago
+  const getTimeAgo = (date: Date): string => {
+    const now = new Date();
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
+    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+
+    if (diffInDays > 0) {
+      return `${diffInDays} gün önce`;
+    } else if (diffInHours > 0) {
+      return `${diffInHours} saat önce`;
+    } else if (diffInMinutes > 0) {
+      return `${diffInMinutes} dakika önce`;
+    } else {
+      return 'Az önce';
+    }
+  };
+
+  // Determine match status
+  const getMatchStatus = (match: any, userId: number): 'pending' | 'waiting'  => {
+    const isUser1 = match.user1Id === userId;
+    const userResponse = isUser1 ? match.user1Response : match.user2Response;
+    const otherUserResponse = isUser1 ? match.user2Response : match.user1Response;
+    
+    if (userResponse === 'PENDING') {
+      // Check if it's new (last 5 days)
+      const createdAt = new Date(match.createdAt);
+      const fiveDaysAgo = new Date();
+      fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5);
+      return 'pending';
+    } else if (userResponse === 'ACCEPTED' && otherUserResponse === 'PENDING') {
+      return 'waiting';
+    }
+    
+    return 'pending';
+  };
+
   // Fetch matches from API
   const fetchMatches = async () => {
     if (!user?.id) return;
     
     setIsLoading(true);
     try {
-      const matches = await matchesAPI.getUserMatches(user.id);
+      const matches = await matchesAPI.getAllUserMatches(user.id);
       
-      const formattedMatches: MatchedUser[] = matches.map((match, index) => ({
-        id: match.id.toString(),
-        matchPercentage: Math.round(match.compatibilityScore),
-        gradientColors: gradientColors[index % gradientColors.length],
-        name: `Kullanıcı ${match.id}`, // API'den gelen gerçek kullanıcı adı olacak
-        age: 24, // API'den gelecek
-        location: 'İzmir', // API'den gelecek
-        lastActive: '2 dk önce', // API'den gelecek
-        interests: match.keywords || ['Genel'], // API'den gelen keywords
-        matchData: match,
-      }));
+      const formattedMatches: MatchedUser[] = matches.map((match, index) => {
+        const createdAt = new Date(match.createdAt);
+        const status = getMatchStatus(match, user.id);
+        
+        return {
+          id: match.id.toString(),
+          matchPercentage: Math.round(match.compatibilityScore),
+          gradientColors: gradientColors[index % gradientColors.length],
+          name: `Kullanıcı ${match.id}`,
+          age: 24,
+          location: 'İzmir',
+          lastActive: '2 dk önce',
+          interests: match.keywords || ['Genel'],
+          matchData: match,
+          createdAt,
+          timeAgo: getTimeAgo(createdAt),
+          status,
+        };
+      });
       
-      setMatchedUsers(formattedMatches);
+      setAllMatches(formattedMatches);
     } catch (error) {
       console.error('Error fetching matches:', error);
       Alert.alert('Hata', 'Eşleşmeler yüklenirken bir hata oluştu.');
@@ -75,6 +124,18 @@ export default function AllMatchesScreen() {
     }
   };
 
+  // Filter matches based on selected filter
+  const filteredMatches = useMemo(() => {
+    switch (selectedFilter) {
+      case 'pending':
+        return allMatches.filter(match => match.status === 'pending');
+      case 'waiting':
+        return allMatches.filter(match => match.status === 'waiting');
+      default:
+        return allMatches;
+    }
+  }, [allMatches, selectedFilter]);
+  
   // Load matches on component mount
   useEffect(() => {
     fetchMatches();
@@ -130,8 +191,8 @@ export default function AllMatchesScreen() {
             <IconSymbol size={24} name="chevron.left" color="#374151" />
           </TouchableOpacity>
           <View className="flex-1">
-            <Text className="text-xl font-bold text-gray-800 text-center">Tüm Eşleşmeler</Text>
-            <Text className="text-gray-500 text-sm text-center">{matchedUsers.length} eşleşme bulundu</Text>
+            <Text className="text-xl font-bold text-gray-800 text-center">Eşleşmelerim</Text>
+            <Text className="text-gray-500 text-sm text-center">{filteredMatches.length} eşleşme bulundu</Text>
           </View>
           <View className="w-8" />
         </View>
@@ -139,66 +200,45 @@ export default function AllMatchesScreen() {
         {/* Filter buttons */}
         <View className="flex-row space-x-2">
           <TouchableOpacity 
-            onPress={() => setSelectedFilter('all')}
+            onPress={() => setSelectedFilter('pending')}
             style={{
               flex: 1,
-              backgroundColor: selectedFilter === 'all' ? '#000000' : 'rgba(255, 255, 255, 0.9)',
+              backgroundColor: selectedFilter === 'pending' ? '#000000' : 'rgba(255, 255, 255, 0.9)',
               paddingVertical: 8,
               borderRadius: 12,
               margin:5,
               borderWidth: 1,
-              borderColor: selectedFilter === 'all' ? '#000000' : 'rgba(0, 0, 0, 0.1)',
+              borderColor: selectedFilter === 'pending' ? '#000000' : 'rgba(0, 0, 0, 0.1)',
             }}
           >
             <Text style={{
-              color: selectedFilter === 'all' ? '#ffffff' : '#000000',
+              color: selectedFilter === 'pending' ? '#ffffff' : '#000000',
               textAlign: 'center',
               fontSize: 12,
               fontWeight: '600',
             }}>
-              Tümü
+              Bekleyen
             </Text>
           </TouchableOpacity>
           <TouchableOpacity 
-            onPress={() => setSelectedFilter('online')}
+            onPress={() => setSelectedFilter('waiting')}
             style={{
               flex: 1,
-              backgroundColor: selectedFilter === 'online' ? '#000000' : 'rgba(255, 255, 255, 0.9)',
+              backgroundColor: selectedFilter === 'waiting' ? '#000000' : 'rgba(255, 255, 255, 0.9)',
               paddingVertical: 8,
               borderRadius: 12,
               margin:5,
               borderWidth: 1,
-              borderColor: selectedFilter === 'online' ? '#000000' : 'rgba(0, 0, 0, 0.1)',
+              borderColor: selectedFilter === 'waiting' ? '#000000' : 'rgba(0, 0, 0, 0.1)',
             }}
           >
             <Text style={{
-              color: selectedFilter === 'online' ? '#ffffff' : '#000000',
+              color: selectedFilter === 'waiting' ? '#ffffff' : '#000000',
               textAlign: 'center',
               fontSize: 12,
               fontWeight: '600',
             }}>
-              Çevrimiçi
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            onPress={() => setSelectedFilter('recent')}
-            style={{
-              flex: 1,
-              backgroundColor: selectedFilter === 'recent' ? '#000000' : 'rgba(255, 255, 255, 0.9)',
-              paddingVertical: 8,
-              borderRadius: 12,
-              margin:5,
-              borderWidth: 1,
-              borderColor: selectedFilter === 'recent' ? '#000000' : 'rgba(0, 0, 0, 0.1)',
-            }}
-          >
-            <Text style={{
-              color: selectedFilter === 'recent' ? '#ffffff' : '#000000',
-              textAlign: 'center',
-              fontSize: 12,
-              fontWeight: '600',
-            }}>
-              Yeni
+              Onaylanan
             </Text>
           </TouchableOpacity>
         </View>
@@ -227,11 +267,19 @@ export default function AllMatchesScreen() {
           <View className="flex-1 justify-center items-center py-8">
             <Text className="text-gray-500 text-sm">Eşleşmeler yükleniyor...</Text>
           </View>
-        ) : matchedUsers.length === 0 ? (
+        ) : filteredMatches.length === 0 ? (
           <View className="flex-1 justify-center items-center py-8">
             <Text className="text-gray-400 text-lg mb-2">🤷‍♂️</Text>
-            <Text className="text-gray-500 text-base text-center mb-1">Henüz eşleşmeniz yok</Text>
-            <Text className="text-gray-400 text-sm text-center">Yeni eşleşmeler için bekleyin</Text>
+            <Text className="text-gray-500 text-base text-center mb-1">
+              {selectedFilter === 'pending' ? 'Onay bekleyen eşleşmeniz yok' :
+               selectedFilter === 'waiting' ? 'Karşı tarafın onayını bekleyen eşleşmeniz yok' :
+               'Yeni eşleşmeniz yok'}
+            </Text>
+            <Text className="text-gray-400 text-sm text-center">
+              {selectedFilter === 'pending' ? 'Yeni eşleşmeler için bekleyin' :
+               selectedFilter === 'waiting' ? 'Karşı tarafın yanıtını bekleyin' :
+               'Son 5 günde yeni eşleşme oluşmadı'}
+            </Text>
           </View>
         ) : (
           <View style={{ 
@@ -242,20 +290,20 @@ export default function AllMatchesScreen() {
             paddingLeft: 16,
             paddingRight: 16,
           }}>
-            {matchedUsers.map((item, index) => (
+            {filteredMatches.map((item, index) => (
               <Animated.View
                 key={item.id}
                 entering={FadeInUp.delay(index * 50).springify()}
-                style={{ width: (width - 48) / 2, marginBottom: 20}}
+                style={{ width: (width - 50) / 2, marginBottom: 20}}
               >
                 <TouchableOpacity
-                  onPress={() => handleCardPress(item)}
-                  activeOpacity={0.9}
+                  onPress={() => (item.status === 'waiting') ? null : handleCardPress(item)}
+                  activeOpacity={(item.status === 'waiting') ? 1 : 0.9}
                   style={{
                     backgroundColor: '#f8fafc',
                     borderRadius: 16,
                     padding: 0,
-                    height: 230,
+                    height: 250, // Increased height for time info
                     marginHorizontal: 6,
                     shadowColor: '#000',
                     shadowOffset: { width: 0, height: 8 },
@@ -264,11 +312,63 @@ export default function AllMatchesScreen() {
                     elevation: 15,
                     borderWidth: 2,
                     borderColor: item.matchPercentage >= 80 ? '#1f2937' : 
-                                item.matchPercentage >= 60 ? '#374151' : 
-                                item.matchPercentage >= 40 ? '#6b7280' : '#9ca3af',
+                               item.matchPercentage >= 60 ? '#374151' : 
+                               item.matchPercentage >= 40 ? '#6b7280' : '#9ca3af',
                     overflow: 'hidden',
                   }}
                 >
+                   {/* Status Badge */}
+                   <View style={{
+                     position: 'absolute',
+                     top: 8,
+                     right: 8,
+                     backgroundColor: item.status === 'waiting' ? '#f59e0b' : '#6b7280',
+                     paddingHorizontal: 8,
+                     paddingVertical: 4,
+                     borderRadius: 12,
+                     zIndex: 3,
+                   }}>
+                     <Text style={{
+                       color: '#ffffff',
+                       fontSize: 5,
+                       fontWeight: 'bold',
+                       textShadowColor: 'rgba(0,0,0,0.8)',
+                       textShadowOffset: { width: 1, height: 1 },
+                       textShadowRadius: 2,
+                     }}>
+                       {item.status === 'waiting' ? 'ONAYLANDI' : 'BEKLEYEN'}
+                     </Text>
+                   </View>
+
+                   {/* Gray Overlay for Waiting Status */}
+                   {item.status === 'waiting' && (
+                     <View style={{
+                       position: 'absolute',
+                       top: 0,
+                       left: 0,
+                       right: 0,
+                       bottom: 0,
+                       backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                       zIndex: 4,
+                       justifyContent: 'center',
+                       alignItems: 'center'
+                     }}>
+                       <Text style={{
+                         color: '#ffffff',
+                         fontSize: 13,
+                         fontWeight: 'bold',
+                         textAlign: 'center',
+                         paddingHorizontal: 20,
+                         lineHeight: 20,
+                         textShadowColor: 'rgba(0,0,0,0.8)',
+                         textShadowOffset: { width: 1, height: 1 },
+                         textShadowRadius: 2,
+                       }}>
+                         Karşı tarafın onayı bekleniyor
+                       </Text>
+                     </View>
+                   )}
+
                   {/* Card Header with Corner Design */}
                   <View style={{
                     position: 'absolute',
@@ -388,6 +488,27 @@ export default function AllMatchesScreen() {
                       textTransform: 'uppercase',
                     }}>
                       Eşleşme Bulundu
+                    </Text>
+                  </View>
+
+                  {/* Time Info at Bottom */}
+                  <View style={{
+                    position: 'absolute',
+                    bottom: 12,
+                    left: 12,
+                    right: 12,
+                    zIndex: 3,
+                  }}>
+                    <Text style={{
+                      color: '#6b7280',
+                      fontSize: 11,
+                      fontWeight: '500',
+                      textAlign: 'center',
+                      textShadowColor: 'rgba(255,255,255,0.8)',
+                      textShadowOffset: { width: 0.5, height: 0.5 },
+                      textShadowRadius: 1,
+                    }}>
+                      {item.timeAgo}
                     </Text>
                   </View>
 

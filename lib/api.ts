@@ -75,6 +75,8 @@ export interface MatchResponse {
   commonTopic: string | null;
   keywords: string[] | null;
   status: string;
+  user1Response: string;
+  user2Response: string;
   createdAt: string;
   expiresAt: string;
 }
@@ -123,6 +125,11 @@ export interface ChatMessageRequest {
 export const matchesAPI = {
   getUserMatches: async (userId: number): Promise<MatchResponse[]> => {
     const response = await api.get(`api/v1/matches/${userId}`);
+    return response.data;
+  },
+
+  getAllUserMatches: async (userId: number): Promise<MatchResponse[]> => {
+    const response = await api.get(`api/v1/matches/all/${userId}`);
     return response.data;
   },
   

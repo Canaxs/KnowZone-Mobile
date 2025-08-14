@@ -1,122 +1,86 @@
 import { router } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
-import { Animated, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useState } from 'react';
+import { Text, TouchableOpacity, View } from 'react-native';
 import { useOnboardingStore } from '../../stores/onboardingStore';
 
-const MAX_HOBBIES = 5;
+const HOBBY_CATEGORIES = [
+  { display: 'Spor yapmak', value: 'Spor', icon: '⚽' },
+  { display: 'Teknoloji ile ilgilenmek', value: 'Teknoloji', icon: '💻' },
+  { display: 'Bilim okumak', value: 'Bilim', icon: '🔬' },
+  { display: 'Tarih araştırmak', value: 'Tarih', icon: '🏛️' },
+  { display: 'Dizi izlemek', value: 'Dizi', icon: '📺' },
+  { display: 'Müzik dinlemek', value: 'Müzik', icon: '🎵' },
+  { display: 'Film izlemek', value: 'Film', icon: '🎬' },
+  { display: 'Uzay hakkında öğrenmek', value: 'Uzay', icon: '🚀' }
+];
 
 export default function HobbiesScreen() {
   const { hobbies, setHobbies } = useOnboardingStore();
-  const [inputText, setInputText] = useState('');
-  const lastAddedIndex = useRef<number | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>(hobbies[0] || '');
 
-  const addHobby = () => {
-    if (inputText.trim() && hobbies.length < MAX_HOBBIES && !hobbies.includes(inputText.trim())) {
-      const newHobbies = [...hobbies, inputText.trim()];
+  const toggleCategory = (categoryValue: string) => {
+    const isSelected = hobbies.includes(categoryValue);
+    if (isSelected) {
+      // Kategoriyi kaldır
+      const newHobbies = hobbies.filter(h => h !== categoryValue);
       setHobbies(newHobbies);
-      setInputText('');
-      lastAddedIndex.current = hobbies.length;
+    } else {
+      // Kategoriyi ekle
+      const newHobbies = [...hobbies, categoryValue];
+      setHobbies(newHobbies);
     }
   };
-
-  const removeHobby = (hobby: string) => {
-    const newHobbies = hobbies.filter(i => i !== hobby);
-    setHobbies(newHobbies);
-  };
-
-  const anim = useRef(new Animated.Value(0));
-  useEffect(() => {
-    if (lastAddedIndex.current !== null) {
-      anim.current.setValue(0);
-      Animated.timing(anim.current, {
-        toValue: 1,
-        duration: 350,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [lastAddedIndex.current]);
 
   return (
     <View className="flex-1 bg-white px-6 pt-36">
       {/* Başlık ve açıklama */}
-      <Text className="text-lg font-semibold text-gray-900 mb-1">Boş zamanlarında ne yapmaktan keyif alırsın?</Text>
-      <Text className="text-base text-gray-500 mb-6">(Örn: Akşamları dizi izlemek, yürüyüş yapmak, gitar çalmak)</Text>
-      {/* Input ve + tuşu */}
-      <View className="flex-row mb-5">
-        <TextInput
-          className="flex-1 border border-gray-300 rounded-full px-4 py-3 mr-3 bg-white"
-          placeholder="Bir hobi ekle..."
-          placeholderTextColor="#9ca3af"
-          value={inputText}
-          onChangeText={setInputText}
-          onSubmitEditing={addHobby}
-          editable={hobbies.length < MAX_HOBBIES}
-        />
-        <TouchableOpacity
-          className={`w-12 h-12 rounded-full justify-center items-center ${inputText.trim() && hobbies.length < MAX_HOBBIES ? 'bg-logoBlack' : 'bg-gray-300'}`}
-          onPress={addHobby}
-          disabled={!inputText.trim() || hobbies.length >= MAX_HOBBIES}
-        >
-          <Text className="text-white text-2xl font-bold">+</Text>
-        </TouchableOpacity>
-      </View>
-      {/* Kutucuklar */}
-      <View className="flex-row flex-wrap mb-2">
-        {hobbies.map((hobby, index) => {
-          if (index === lastAddedIndex.current) {
-
-            return (
-              <Animated.View
-                key={index}
-                style={{
-                  opacity: anim.current,
-                  transform: [{ scale: anim.current.interpolate({ inputRange: [0, 1], outputRange: [0.7, 1] }) }],
-                }}
-              >
-                <TouchableOpacity
-                  className={`flex-row items-center px-4 py-2 m-1 rounded-full bg-logoBlack shadow-sm`}
-                  style={{ minWidth: 80 }}
-                  onPress={() => removeHobby(hobby)}
-                  activeOpacity={0.8}
-                >
-                  <Text className="text-white mr-2 font-medium">{hobby}</Text>
-                  <Text className="text-white text-lg font-bold">×</Text>
-                </TouchableOpacity>
-              </Animated.View>
-            );
-          } else {
-            return (
-              <TouchableOpacity
-                key={index}
-                className={`flex-row items-center px-4 py-2 m-1 rounded-full bg-logoBlack shadow-sm`}
-                style={{ minWidth: 80 }}
-                onPress={() => removeHobby(hobby)}
-                activeOpacity={0.8}
-              >
-                <Text className="text-white mr-2 font-medium">{hobby}</Text>
-                <Text className="text-white text-lg font-bold">×</Text>
-              </TouchableOpacity>
-            );
-          }
+      <Text className="text-lg font-semibold text-gray-900 mb-1">Hangi alanlara ilgin var?</Text>
+      <Text className="text-base text-gray-500 mb-8">İlgilendiğin kategorileri seç</Text>
+      
+      {/* Kategori kutucukları */}
+      <View className="flex-row flex-wrap justify-center mb-8">
+        {HOBBY_CATEGORIES.map((category) => {
+          const isSelected = hobbies.includes(category.value);
+          return (
+            <TouchableOpacity
+              key={category.value}
+              className={`px-6 py-4 m-2 rounded-2xl border-2 ${
+                isSelected
+                  ? 'bg-logoBlack border-logoBlack' 
+                  : 'bg-white border-gray-300'
+              }`}
+              onPress={() => toggleCategory(category.value)}
+              activeOpacity={0.8}
+            >
+              <View className="items-center">
+                <Text className="text-2xl mb-1">{category.icon}</Text>
+                <Text className={`text-center font-semibold text-sm ${
+                  isSelected ? 'text-white' : 'text-gray-700'
+                }`}>
+                  {category.display}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          );
         })}
-        {/* Boş kutucuklar (max 5) */}
-        {Array.from({ length: MAX_HOBBIES - hobbies.length }).map((_, i) => (
-          <View key={i + hobbies.length} className="px-4 py-2 m-1 rounded-full bg-gray-100 border border-gray-200" style={{ minWidth: 80 }} />
-        ))}
       </View>
-      {/* Uyarı ve sayaç */}
-      <Text className={`text-center text-sm mt-2 ${hobbies.length < 3 ? 'text-red-500' : 'text-gray-400'}`}>{
-        hobbies.length < 3
-          ? `Devam etmek için ${3 - hobbies.length} kategori daha seç.`
-          : `${hobbies.length}/5 Seçildi`
-      }</Text>
+      
+      {/* Seçim durumu */}
+      <Text className={`text-center text-sm mb-4 ${
+        hobbies.length > 0 ? 'text-green-600' : 'text-red-500'
+      }`}>
+        {hobbies.length > 0
+          ? `${hobbies.length} kategori seçildi` 
+          : 'Devam etmek için en az bir kategori seç'
+        }
+      </Text>
       {/* Devam Et butonu */}
       <TouchableOpacity
         className={`p-4 rounded-full mt-5 ${
-          hobbies.length >= 3 ? 'bg-logoBlack' : 'bg-gray-300'
+          hobbies.length > 0 ? 'bg-logoBlack' : 'bg-gray-300'
         }`}
         onPress={() => router.push('/onboarding/idealperson')}
-        disabled={hobbies.length < 3}
+        disabled={hobbies.length === 0}
       >
         <Text className="text-white text-center font-bold text-base">
           Devam et
@@ -138,10 +102,10 @@ export default function HobbiesScreen() {
         </View>
         <TouchableOpacity
           onPress={() => router.push('/onboarding/idealperson')}
-          disabled={hobbies.length < 3}
+          disabled={hobbies.length === 0}
           style={{ paddingHorizontal: 16, paddingVertical: 8 }}
         >
-          <Text style={{ fontSize: 36, color: hobbies.length >= 3 ? '#111827' : '#d1d5db', fontWeight: 'bold' }}>›</Text>
+          <Text style={{ fontSize: 36, color: hobbies.length > 0 ? '#111827' : '#d1d5db', fontWeight: 'bold' }}>›</Text>
         </TouchableOpacity>
       </View>
     </View>
