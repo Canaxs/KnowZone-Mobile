@@ -1,7 +1,7 @@
 const ENV = {
     development: {
-      API_BASE_URL: 'http://10.167.69.185:8080',
-      WS_URL: 'http://10.167.69.185:8080/ws'
+      API_BASE_URL: 'http://192.168.1.105:8080',
+      WS_URL: 'http://192.168.1.105:8080/ws'
     },
     production: {
       API_BASE_URL: 'https://your-production-domain.com',

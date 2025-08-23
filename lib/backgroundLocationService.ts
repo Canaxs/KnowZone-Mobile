@@ -50,12 +50,17 @@ class BackgroundLocationService {
         longitude: location.longitude
       };
       
-      await matchesAPI.updateLocation(locationData);
+      const response = await matchesAPI.updateLocation(locationData);
       console.log('Background location updated successfully');
       
-      // Toast göster
-      if (this.toastStore) {
-        this.toastStore.showToast('Konum güncellendi!', 'success');
+      if (response === true) {
+        console.log('Match found! Showing success toast');
+        if (this.toastStore) {
+          this.toastStore.showToast('🎉 Yeni eşleşme bulundu!', 'success');
+        }
+      } else if (response === false) {
+        console.log('No match found in nearby area');
+        // False durumunda toast gösterme, sadece log
       }
     } catch (error) {
       console.error('Error updating background location:', error);

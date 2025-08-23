@@ -20,6 +20,7 @@ const MAPPING = {
   'chevron.right': 'chevron-right',
   'chevron.left': 'chevron-left',
   'person.fill': 'person',
+  'arrow.right': 'arrow-right',
   'gearshape.fill': 'settings',
   'lock.fill': 'lock',
   'bell.fill': 'notifications',
