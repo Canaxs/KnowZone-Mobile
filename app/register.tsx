@@ -16,12 +16,48 @@ export default function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [remember, setRemember] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [showErrors, setShowErrors] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const keyboardAnimation = useRef(new Animated.Value(0)).current;
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   const { register } = useAuthStore();
 
+  // Email validation regex
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return emailRegex.test(email);
+  };
+
+  // Password validation
+  const validatePassword = (password: string) => {
+    return password.length >= 6 && /[A-Z]/.test(password);
+  };
+
+  const handleEmailChange = (text: string) => {
+    setEmail(text);
+    if (showErrors && !validateEmail(text)) {
+      setEmailError('Geçerli bir e-posta adresi girin (örn: example@gmail.com)');
+    } else {
+      setEmailError('');
+    }
+  };
+
+  const handlePasswordChange = (text: string) => {
+    setPassword(text);
+    if (showErrors && !validatePassword(text)) {
+      setPasswordError('Şifre en az 6 karakter ve bir büyük harf içermeli');
+    } else {
+      setPasswordError('');
+    }
+  };
+
   const handleRegister = async () => {
+    setShowErrors(true);
+    
     if (!username || !email || !password || !confirmPassword) {
       Alert.alert('Hata', 'Lütfen tüm alanları doldurun');
       return;
@@ -32,13 +68,13 @@ export default function RegisterScreen() {
       return;
     }
 
-    if (password.length < 6) {
-      Alert.alert('Hata', 'Şifre en az 6 karakter olmalıdır');
+    if (!validatePassword(password)) {
+      setPasswordError('Şifre en az 6 karakter ve bir büyük harf içermeli');
       return;
     }
 
-    if (!email.includes('@')) {
-      Alert.alert('Hata', 'Geçerli bir e-posta adresi girin');
+    if (!validateEmail(email)) {
+      setEmailError('Geçerli bir e-posta adresi girin (örn: example@gmail.com)');
       return;
     }
 
@@ -169,7 +205,7 @@ export default function RegisterScreen() {
               keyboardType="email-address"
               autoCapitalize="none"
               value={email}
-              onChangeText={setEmail}
+              onChangeText={handleEmailChange}
               style={{ textAlignVertical: 'center', height: 48 ,lineHeight: 17}}
               editable={!isLoading}
             />
@@ -181,27 +217,59 @@ export default function RegisterScreen() {
               className="flex-1 px-3 text-base text-gray-800"
               placeholder="Şifre"
               placeholderTextColor="#9ca3af"
-              secureTextEntry
+              autoCapitalize="none"
+              secureTextEntry={!showPassword}
               value={password}
-              onChangeText={setPassword}
+              onChangeText={handlePasswordChange}
               style={{ textAlignVertical: 'center', height: 48 ,lineHeight: 17}}
               editable={!isLoading}
             />
+            <TouchableOpacity
+              onPress={() => setShowPassword(!showPassword)}
+              className="p-2"
+              activeOpacity={0.7}
+            >
+              <Feather 
+                name={showPassword ? "eye-off" : "eye"} 
+                size={20} 
+                color="#9ca3af" 
+              />
+            </TouchableOpacity>
           </View>
           {/* Şifre Tekrar */}
-          <View className="flex-row items-center bg-gray-100 rounded-xl px-4 mb-2">
+          <View className="flex-row items-center bg-gray-100 rounded-xl px-4 mb-4">
             <FontAwesome name="lock" size={22} color="#9ca3af" />
             <TextInput
               className="flex-1 px-3 text-base text-gray-800"
               placeholder="Şifre Tekrar"
               placeholderTextColor="#9ca3af"
-              secureTextEntry
+              secureTextEntry={!showConfirmPassword}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               style={{ textAlignVertical: 'center', height: 48 ,lineHeight: 17}}
               editable={!isLoading}
             />
+            <TouchableOpacity
+              onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+              className="p-2"
+              activeOpacity={0.7}
+            >
+              <Feather 
+                name={showConfirmPassword ? "eye-off" : "eye"} 
+                size={20} 
+                color="#9ca3af" 
+              />
+            </TouchableOpacity>
           </View>
+          
+          {/* Hata mesajları */}
+          {showErrors && emailError ? (
+            <Text className="text-red-500 text-sm mb-3 px-1">{emailError}</Text>
+          ) : null}
+          {showErrors && passwordError ? (
+            <Text className="text-red-500 text-sm mb-3 px-1">{passwordError}</Text>
+          ) : null}
+          
           {/* Kayıt Ol Butonu */}
           <TouchableOpacity 
             className={`rounded-2xl py-4 mb-4 mt-2 shadow-lg ${isLoading ? 'bg-gray-400' : 'bg-logoBlack'}`}

@@ -49,7 +49,8 @@ export default function LocationPermissionScreen() {
       if (user) {
         const updatedUser = {
           ...user,
-          onboardingCompleted: true
+          onboardingCompleted: true,
+          gender: gender as string
         };
         updateUserOnboardingStatus(updatedUser);
       }
